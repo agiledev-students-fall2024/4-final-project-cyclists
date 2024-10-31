@@ -75,7 +75,7 @@ function Map() {
   }, []);
 
   return (
-    <div className="relative h-screen">
+    <div className="relative h-screen w-full pt-10">
       {/* Map container */}
       <div id="map-container" className="h-full w-full" ref={mapContainerRef} />
 

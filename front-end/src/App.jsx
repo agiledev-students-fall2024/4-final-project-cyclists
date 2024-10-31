@@ -6,26 +6,24 @@ import Profile from './Profile';
 import EditProfile from './EditProfile'; 
 import Map from './Map';
 import SavedRoutes from './SavedRoutes';
-import Login from './Login'; // Import the Login component
-import Signup from './Signup'; // Import the Signup component
+import Login from './Login'; 
+import Signup from './Signup'; 
 
 function App() {
   return (
-    <div className="h-screen overflow-hidden">
-      <Router>
-        <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/post" element={<Post />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/edit-profile" element={<EditProfile />} />
-          <Route path="/map" element={<Map />} />
-          <Route path="/saved-routes" element={<SavedRoutes />} />
-          <Route path="/login" element={<Login />} /> {/* Add Login route */}
-          <Route path="/signup" element={<Signup />} /> {/* Add Signup route */}
-        </Routes>
-      </Router>
-    </div>
+    <Router>
+      <Header />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/post" element={<Post />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/edit-profile" element={<EditProfile />} />
+        <Route path="/map" element={<Map />} />
+        <Route path="/saved-routes" element={<SavedRoutes />} />
+        <Route path="/login" element={<Login />} /> 
+        <Route path="/signup" element={<Signup />} /> 
+      </Routes>
+    </Router>
   );
 }
 
