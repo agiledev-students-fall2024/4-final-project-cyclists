@@ -34,34 +34,32 @@ Cyclable was born out of a common frustration among cyclists in New York City: d
      ```
 
 2. **Clone the Repository**:
-   Since we have our front-end setup, you can run our front-end by:
+   Clone the repository to your local machine:
 
    ```bash
    git clone https://github.com/agiledev-students-fall2024/4-final-project-cyclists.git
    cd 4-final-project-cyclists
-   cd front-end
    ```
 
-3. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+### Build and Launch the Back End
 
-### Running the Application
-
-To start the application , run:
-
-```bash
-npm start
-```
-
-To create an optimized production build, run:
-
-```bash
-npm run build
-```
+1. Navigate into the **back-end** directory using `cd back-end`.
+1. Run `npm install` to install the required dependencies.
+1. Run `npm start` to launch the backend server. 
 
 The app will be accessible locally at `http://localhost:3000`.
+
+### Build and Launch the Front End
+
+1. Open a new terminal.
+1. Navigate into the **front-end** directory using `cd front-end`.
+1. Run `npm install` to install the required dependencies.
+1. Run `npm start` to launch the front-end app.
+
+### Run Tests
+
+1. Navigate to the **back-end** directory using `cd back-end`.
+1. Run `npm test` to execute backend tests.
 
 ## How to Contribute
 
