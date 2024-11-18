@@ -2,6 +2,7 @@
 require('dotenv').config(); // import .env variables
 const express = require('express');
 const morgan = require('morgan'); // middleware for logging HTTP requests
+const mongoose = require('mongoose'); // mongoose models for MongoDB data manipulation
 
 /**
  * @module app
@@ -9,6 +10,16 @@ const morgan = require('morgan'); // middleware for logging HTTP requests
  */
 
 const app = express(); // instantiate an Express object
+
+// connect to the database
+try {
+  mongoose.connect(process.env.MONGODB_URI);
+  console.log(`Connected to MongoDB.`);
+} catch (err) {
+  console.log(
+    `Error connecting to MongoDB user account authentication will fail: ${err}`
+  );
+}
 
 app.use((req, res, next) => {
   // Allow requests from your React app
