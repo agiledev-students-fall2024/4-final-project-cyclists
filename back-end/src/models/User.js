@@ -1,6 +1,5 @@
-/*  
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
+const mongoose = require('mongoose'); 
+const bcrypt = require('bcryptjs'); 
 
 const routeSchema = new mongoose.Schema({
     name: {
@@ -56,8 +55,8 @@ const userSchema = new mongoose.Schema({
     timestamps: true
   });
   
-  // Pre-save hook to hash the password before saving to the database
-  userSchema.pre('save', async function (next) {
+// Pre-save hook to hash the password before saving to the database
+userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next(); // If password is not modified, skip hashing
   
     try {
@@ -69,12 +68,11 @@ const userSchema = new mongoose.Schema({
     }
   });
   
-  // Method to compare the entered password with the stored hashed password
-  userSchema.methods.comparePassword = async function (password) {
+// Method to compare the entered password with the stored hashed password
+userSchema.methods.comparePassword = async function (password) {
     return bcrypt.compare(password, this.password);
-  };
+};
   
-  const User = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
   
-  export { User };
-  */
+module.exports = { User }; // Use module.exports to export the User model

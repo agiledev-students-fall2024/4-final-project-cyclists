@@ -18,7 +18,7 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/auth/signup`, formData);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/signup`, formData);
       console.log('Signup success:', response.data);
       navigate('/map'); // Redirect on success
     } catch (error) {

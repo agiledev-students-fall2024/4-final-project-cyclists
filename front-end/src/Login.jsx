@@ -17,7 +17,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/auth/login`, formData);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/auth/login`, formData);
       console.log('Login success:', response.data);
       navigate('/map'); // Redirect on success
     } catch (error) {
@@ -47,6 +47,9 @@ const Login = () => {
           <button type='submit' className='rounded-md bg-emerald-800 px-4 py-2 text-white'>Login</button>
         </form>
         <p className='mt-4'>Don't have an account? <Link to='/signup' className='text-emerald-800'>Sign up</Link></p>
+        <p className='mt-2'>
+          <Link to='/forgot-password' className='text-emerald-800'>Forgot Password?</Link>
+        </p>
       </div>
     </div>
   );
