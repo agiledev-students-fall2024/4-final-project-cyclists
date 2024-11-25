@@ -53,3 +53,24 @@ exports.login = async (req, res) => {
         res.status(500).json({ message: 'An error occurred during login' });
     }
 };
+
+// Reset Password function
+exports.resetPassword = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        await user.save();
+
+        res.status(200).json({ message: 'Password updated successfully' });
+    } catch (err) {
+        console.error('Error resetting password:', err);
+        res.status(500).json({ message: 'An error occurred during password reset' });
+    }
+};
