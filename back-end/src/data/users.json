@@ -1,27 +1,6 @@
 [
   {
-    "name": "Alice Johnson",
-    "email": "alice.johnson@example.com",
-    "password": "password123"
-  },
-  {
-    "name": "Bob Smith",
-    "email": "bob.smith@example.com",
-    "password": "securepass456"
-  },
-  {
-    "name": "Carol Williams",
-    "email": "carol.williams@example.com",
-    "password": "mypassword789"
-  },
-  {
-    "name": "David Brown",
-    "email": "david.brown@example.com",
-    "password": "letmein321"
-  },
-  {
-    "name": "Eve Davis",
-    "email": "eve.davis@example.com",
-    "password": "qwerty123"
+    "email": "test@example.com",
+    "password": "$2b$10$cXFONTWgNARtgAWIOrC7OepUzwNcp2eML4GPcOFmUl2REzHFx2x9e"
   }
 ]

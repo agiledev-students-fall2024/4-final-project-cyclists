@@ -1,18 +1,1 @@
-[
-  {
-    "id": 1,
-    "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...",
-    "caption": "Sample caption for post 1",
-    "longitude": -73.9967,
-    "latitude": 40.7312,
-    "date": "2024-04-27T12:34:56Z"
-  },
-  {
-    "id": 2,
-    "image": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...",
-    "caption": "Sample caption for post 2",
-    "longitude": -73.9857,
-    "latitude": 40.7484,
-    "date": "2024-04-28T09:15:30Z"
-  }
-]
+[]
