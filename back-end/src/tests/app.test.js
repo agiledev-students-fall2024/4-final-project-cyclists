@@ -1,12 +1,18 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const sinon = require('sinon');
+const mongoose = require('mongoose');
 const app = require('../app');
 
 chai.use(chaiHttp);
 const { expect } = chai;
 
 describe('App Tests', () => {
+  // close the mongoose connection after all tests
+  after(async () => {
+    await mongoose.connection.close();
+  });
+
   describe('CORS OPTIONS Request Handling', () => {
     it('should respond with 200 status for preflight requests', done => {
       chai
