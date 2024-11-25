@@ -1,8 +1,8 @@
-const { User } = require('../models/User'); 
-const bcrypt = require('bcrypt');
+import bcrypt from 'bcrypt';
+import { User } from '../models/User.js';
 
 // Signup function
-exports.signup = async (req, res) => {
+export const signup = async (req, res) => {
     const { email, password, username, name } = req.body;
 
     try {
@@ -31,7 +31,7 @@ exports.signup = async (req, res) => {
 };
 
 // Login function
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -55,7 +55,7 @@ exports.login = async (req, res) => {
 };
 
 // Reset Password function
-exports.resetPassword = async (req, res) => {
+export const resetPassword = async (req, res) => {
     const { email, password } = req.body;
 
     try {
