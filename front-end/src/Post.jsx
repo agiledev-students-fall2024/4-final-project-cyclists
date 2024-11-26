@@ -300,14 +300,6 @@ function Post() {
                     markerRef.current.remove();
                     markerRef.current = null;
                   }
-
-                  if (mapRef.current) {
-                    mapRef.current.flyTo({
-                      center: [-73.9967, 40.7312],
-                      zoom: 14,
-                      essential: true,
-                    });
-                  }
                 }}
                 className='rounded bg-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-400'
               >
