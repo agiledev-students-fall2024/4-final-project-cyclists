@@ -84,5 +84,5 @@ exports.login = (req, res) => {
     }
 
     console.log("Login successful for user:", email);
-    res.status(200).json({ message: 'Login successful' });
+    res.status(200).json({ message: 'Login successful', name: user.name });
 };
