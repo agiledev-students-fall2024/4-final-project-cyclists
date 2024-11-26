@@ -4,18 +4,22 @@ import { User, ChevronRight, MapPin, Clock, Route } from 'lucide-react';
 import { FaAngleDoubleRight } from 'react-icons/fa';
 import { API_URL } from './config/api';
 
-// const API_URL = 'http://localhost:3001/api';
-
 const Profile = () => {
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState({
-    username: 'unique_username',
+    username: 'unique_username',  // Default value if user is not found
     routes: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Fetch the current user's data from localStorage
+    const storedUser = JSON.parse(localStorage.getItem('User'));
+    if (storedUser && storedUser.name) {
+      setUserInfo(prevInfo => ({ ...prevInfo, username: storedUser.name }));
+    }
+
     const fetchRoutes = async () => {
       setIsLoading(true);
       try {
@@ -60,7 +64,7 @@ const Profile = () => {
             <User size={32} className='text-gray-400' />
           </div>
           <div className='flex-1'>
-            <h2 className='text-lg font-medium'>{userInfo.username}</h2>
+            <h2 className='text-lg font-medium'>{userInfo.username}</h2>  {/* Username displayed here */}
             <div className="mt-2 flex space-x-3">
               <button
                 onClick={() => navigate('/edit-profile')}

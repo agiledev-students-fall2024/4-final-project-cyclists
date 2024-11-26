@@ -23,5 +23,22 @@
     "name": "Eve Davis",
     "email": "eve.davis@example.com",
     "password": "qwerty123"
+  },
+  {
+    "email": "marley@gmail.com",
+    "password": "$2b$10$PP/DP.M2qU7l/Fu2uP4WUeUfsYneZ.Hr7e9auOpwCOruZdY0zvSiC"
+  },
+  {
+    "email": "sally@gmail.com",
+    "password": "$2b$10$oySSq2vt..MDeZyQxrmXIOfrymZ9BKU/nHMw4BpjId74WFU355L3W"
+  },
+  {
+    "email": "ryke@gmail.com",
+    "password": "$2b$10$s4l/empr1olQ7DFbCS8QNO1qLA86N1vqt/YKErYrgZQ3RNre9muW6"
+  },
+  {
+    "name": "lea",
+    "email": "lea@gmail.com",
+    "password": "$2b$10$KIYA5WARZtjM03UJLjjEiuB8VeMiC8NuZNiys/mL/c89mZUJv4xyy"
   }
 ]
