@@ -8,11 +8,62 @@ import { FaSave } from 'react-icons/fa';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import { API_URL } from './config/api';
 
-
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
-// const API_URL = 'http://localhost:3001/api';
-
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
+
+// TODO: pull incident data from the back-end
+// Mock JSON data
+const mockData = [
+  { id: 1, coordinates: [-73.998, 40.732], title: 'Pothole', minZoom: 18 },
+  {
+    id: 2,
+    coordinates: [-73.999, 40.725],
+    title: 'Blocked Bike Lane',
+    minZoom: 18,
+  },
+  {
+    id: 3,
+    coordinates: [-73.999, 40.731],
+    title: 'Aggressive Driver',
+    minZoom: 18,
+  },
+  {
+    id: 4,
+    coordinates: [-73.983, 40.733],
+    title: 'Road Construction',
+    minZoom: 18,
+  },
+  {
+    id: 5,
+    coordinates: [-73.992, 40.722],
+    title: 'Car Door Hazard',
+    minZoom: 18,
+  },
+  {
+    id: 6,
+    coordinates: [-73.987, 40.738],
+    title: 'Pedestrian in Bike Lane',
+    minZoom: 18,
+  },
+  {
+    id: 7,
+    coordinates: [-73.996, 40.725],
+    title: 'Unmarked Intersection',
+    minZoom: 18,
+  },
+  {
+    id: 8,
+    coordinates: [-73.986, 40.732],
+    title: 'Slippery Surface',
+    minZoom: 18,
+  },
+  {
+    id: 9,
+    coordinates: [-73.976, 40.719],
+    title: 'Obstructed View',
+    minZoom: 18,
+  },
+];
 
 function Map() {
   const navigate = useNavigate();
@@ -46,9 +97,10 @@ function Map() {
         return;
       }
 
-      // Get the waypoints from the first leg; Not able to add from accessing geometry 
+      // Get the waypoints from the first leg; Not able to add from accessing geometry
       const startPoint = routeData.legs[0].steps[0];
-      const endPoint = routeData.legs[0].steps[routeData.legs[0].steps.length - 1];
+      const endPoint =
+        routeData.legs[0].steps[routeData.legs[0].steps.length - 1];
 
       // Create route object for storage with validated data
       const newRoute = {
@@ -62,23 +114,23 @@ function Map() {
         origin: {
           place_name: startPoint.name || 'Start',
           geometry: {
-            type: "Point",
+            type: 'Point',
             coordinates: [
               startPoint.maneuver.location[0],
-              startPoint.maneuver.location[1]
-            ]
-          }
+              startPoint.maneuver.location[1],
+            ],
+          },
         },
         destination: {
           place_name: endPoint.name || 'End',
           geometry: {
-            type: "Point",
+            type: 'Point',
             coordinates: [
               endPoint.maneuver.location[0],
-              endPoint.maneuver.location[1]
-            ]
-          }
-        }
+              endPoint.maneuver.location[1],
+            ],
+          },
+        },
       };
 
       // Debug logging
@@ -90,7 +142,7 @@ function Map() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newRoute)
+        body: JSON.stringify(newRoute),
       });
 
       // Log response status for debugging
@@ -99,7 +151,9 @@ function Map() {
       // Handle non-ok responses
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'Failed to save route');
+        throw new Error(
+          errorData.error || errorData.message || 'Failed to save route',
+        );
       }
 
       const savedRoute = await response.json();
@@ -117,15 +171,16 @@ function Map() {
     }
   };
 
-
-  const loadSavedRoute = async (route) => {
+  const loadSavedRoute = async route => {
     try {
       setIsLoadingSavedRoute(true);
 
       if (directionsRef.current) {
         // Set origin and destination using the coordinates from the saved route
         directionsRef.current.setOrigin(route.origin.geometry.coordinates);
-        directionsRef.current.setDestination(route.destination.geometry.coordinates);
+        directionsRef.current.setDestination(
+          route.destination.geometry.coordinates,
+        );
 
         // Fit the map to show the full route
         if (mapInstanceRef.current && route.geometry) {
@@ -146,7 +201,7 @@ function Map() {
 
           mapInstanceRef.current.fitBounds(bounds, {
             padding: 100,
-            duration: 1000
+            duration: 1000,
           });
         }
       }
@@ -156,6 +211,37 @@ function Map() {
     } finally {
       setIsLoadingSavedRoute(false);
     }
+  };
+
+  // Function to add pins to the map
+  const loadMarkers = (map, pins) => {
+    const markers = [];
+
+    pins.forEach(location => {
+      // TODO: customize pins based on type of incident
+      // const el = document.createElement('div');
+      // el.className = 'marker';
+      // el.style.backgroundColor = '#5D7BD6';
+      // el.style.width = '16px';
+      // el.style.height = '16px';
+      // el.style.borderRadius = '50%';
+      // el.style.cursor = 'pointer';
+
+      // el.addEventListener('click', () => {
+      //   alert(`Clicked on: ${location.title}`);
+      // });
+
+      // const marker = new mapboxgl.Marker(el)
+      // ...
+      const marker = new mapboxgl.Marker()
+        .setLngLat(location.coordinates)
+        .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(location.title))
+        .addTo(map);
+
+      markers.push({ marker, minZoom: location.minZoom });
+    });
+
+    return markers;
   };
 
   useEffect(() => {
@@ -174,7 +260,7 @@ function Map() {
 
       mapInstanceRef.current.addControl(
         new mapboxgl.NavigationControl(),
-        'bottom-right'
+        'bottom-right',
       );
 
       directionsRef.current = new MapboxDirections({
@@ -185,15 +271,15 @@ function Map() {
         controls: {
           inputs: true,
           instructions: true,
-          profileSwitcher: false
+          profileSwitcher: false,
         },
-        interactive: true
+        interactive: true,
       });
 
       mapInstanceRef.current.addControl(directionsRef.current, 'top-left');
 
       // Listen for route updates
-      directionsRef.current.on('route', (e) => {
+      directionsRef.current.on('route', e => {
         if (e.route && e.route[0]) {
           setRouteData(e.route[0]);
           setSaveStatus('');
@@ -201,7 +287,7 @@ function Map() {
         }
       });
 
-      mapInstanceRef.current.on('error', (e) => {
+      mapInstanceRef.current.on('error', e => {
         console.error('Map error:', e);
         setMapError('Error loading map');
       });
@@ -216,6 +302,19 @@ function Map() {
         }
       });
 
+      const markers = loadMarkers(mapInstanceRef.current, mockData); // Add mock pins to the map
+
+      // TODO: display pins based on zoom level, so that they don't clutter the map as a user zooms out
+      // alternatively, we can add a toggle feature that hides pins when a user zooms out far enough
+
+      // mapInstanceRef.current.on('zoom', () => {
+      //   const zoom = mapInstanceRef.current.getZoom();
+      //   markers.forEach(({ marker, minZoom }) => {
+      //     if (zoom >= minZoom) {
+      //       marker.remove();
+      //     }
+      //   });
+      // });
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Error initializing map');
@@ -231,20 +330,26 @@ function Map() {
   return (
     <div className='relative h-screen'>
       {mapError ? (
-        <div className="h-full flex items-center justify-center bg-gray-100">
-          <div className="text-red-600 text-center p-4">
-            <p className="text-xl font-bold">Error</p>
+        <div className='flex h-full items-center justify-center bg-gray-100'>
+          <div className='p-4 text-center text-red-600'>
+            <p className='text-xl font-bold'>Error</p>
             <p>{mapError}</p>
-            <p className="text-sm mt-2">Please check your Mapbox configuration</p>
+            <p className='mt-2 text-sm'>
+              Please check your Mapbox configuration
+            </p>
           </div>
         </div>
       ) : (
         <>
-          <div id='map-container' className='h-94 w-full' ref={mapContainerRef} />
+          <div
+            id='map-container'
+            className='h-94 w-full'
+            ref={mapContainerRef}
+          />
 
           {/* Controls */}
           {/* <div className='absolute top-4 right-12 bg-white p-4 rounded shadow-lg space-y-2'> */}
-          <div className='absolute bottom-16 left-12 bg-white p-4 rounded shadow-lg space-y-2 max-w-md'>
+          <div className='absolute bottom-16 left-12 max-w-md space-y-2 rounded bg-white p-4 shadow-lg'>
             {routeData && (
               <button
                 onClick={saveRoute}
@@ -253,25 +358,29 @@ function Map() {
                   isSaving || isLoadingSavedRoute
                     ? 'bg-gray-400'
                     : 'bg-green-500 hover:bg-green-600'
-                  } text-white px-4 py-2 rounded flex items-center justify-center gap-2`}
+                } flex items-center justify-center gap-2 rounded px-4 py-2 text-white`}
               >
                 <FaSave />
                 {isSaving ? 'Saving...' : 'Save Route'}
               </button>
             )}
             {saveStatus && (
-              <div className={`text-center p-2 rounded ${
-                saveStatus.includes('Error') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-                }`}>
+              <div
+                className={`rounded p-2 text-center ${
+                  saveStatus.includes('Error')
+                    ? 'bg-red-100 text-red-600'
+                    : 'bg-green-100 text-green-600'
+                }`}
+              >
                 {saveStatus}
               </div>
             )}
           </div>
 
-          <div className='absolute bottom-16 right-12 bg-white p-4 rounded shadow-lg'>
+          <div className='absolute bottom-16 right-12 rounded bg-white p-4 shadow-lg'>
             <button
               onClick={reportIncident}
-              className='bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded flex items-center justify-center gap-2'
+              className='flex items-center justify-center gap-2 rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600'
             >
               <FaExclamationTriangle />
               Report Incident
