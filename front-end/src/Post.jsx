@@ -5,6 +5,7 @@ import Webcam from 'react-webcam';
 import mapboxgl from 'mapbox-gl';
 import EXIF from 'exif-js';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { API_URL } from './config/api';
 
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 
@@ -15,6 +16,7 @@ function Post() {
   const [latitude, setLatitude] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const fileInputRef = useRef(null);
   const webcamRef = useRef(null);
   const mapContainerRef = useRef(null);
@@ -145,23 +147,25 @@ function Post() {
   const handleImageUpload = async e => {
     const file = e.target.files[0];
     if (file) {
-      // Set image preview
-      const reader = new FileReader();
-      reader.onloadend = () => setImage(reader.result);
-      reader.readAsDataURL(file);
-
       try {
-        console.log('Processing file:', file.name);
+        // Convert to base64
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        setImage(base64);
+
         const { longitude: lng, latitude: lat } =
           await extractImageMetadata(file);
         console.log('Extracted coordinates:', { lng, lat });
 
         if (lng !== null && lat !== null) {
-          console.log('Setting coordinates:', { lng, lat });
           setLongitude(lng.toFixed(6));
           setLatitude(lat.toFixed(6));
         } else {
-          // If no GPS data, try to get current location as fallback
           try {
             const position = await new Promise((resolve, reject) => {
               navigator.geolocation.getCurrentPosition(resolve, reject);
@@ -180,7 +184,7 @@ function Post() {
         setShowMap(true);
       } catch (error) {
         console.error('Error processing image:', error);
-        setShowMap(true);
+        alert('Error processing image. Please try again.');
       }
     }
   };
@@ -227,9 +231,68 @@ function Post() {
 
   const handleCaptionChange = e => setCaption(e.target.value);
 
-  const handlePostClick = () => {
-    console.log('Post clicked.', { caption, longitude, latitude, image });
-    alert('Post submitted successfully!');
+  const handlePostClick = async () => {
+    try {
+      if (!image) {
+        alert('Please add a photo');
+        return;
+      }
+      if (!longitude || !latitude) {
+        alert('Please set a location');
+        return;
+      }
+      if (!caption) {
+        alert('Please add a caption');
+        return;
+      }
+      const incidentData = {
+        image: image,
+        caption: caption,
+        longitude: longitude,
+        latitude: latitude,
+      };
+
+      console.log('Sending incident data:', {
+        ...incidentData,
+        image: '[truncated]',
+      });
+
+      const response = await fetch(`${API_URL}/incidents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(incidentData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to report incident');
+      }
+
+      const result = await response.json();
+      console.log('Incident saved:', {
+        ...result,
+        image: '[truncated]',
+      });
+
+      setImage(null);
+      setCaption('');
+      setLongitude('');
+      setLatitude('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = null;
+      }
+
+      // Show success notification
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error reporting incident:', error);
+      alert(error.message || 'Failed to report incident. Please try again.');
+    }
   };
 
   const invalidatePhoto = () => {
@@ -380,6 +443,15 @@ function Post() {
       >
         Post
       </button>
+      {/* Success Toast Notification */}
+      {showSuccess && (
+        <div className='fixed right-4 top-4 z-50 rounded-lg bg-green-500 p-4 text-white shadow-lg'>
+          <div className='flex items-center gap-2'>
+            <span className='text-xl'>✓</span>
+            <p>Successfully posted!</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
