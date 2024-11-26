@@ -1,6 +1,12 @@
 const Incident = require('../models/Incident');
 
-// Get all incidents
+/**
+ * Retrieves all reported incidents, sorted by most recent.
+ * @function getIncidents
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object, containing incidents data.
+ * @returns {void} Sends a JSON response with an array of incidents.
+ */
 const getIncidents = async (req, res) => {
     try {
         const incidents = await Incident.find()
@@ -12,7 +18,13 @@ const getIncidents = async (req, res) => {
     }
 };
 
-// Report new incident
+/**
+ * Reports a new incident with image, caption, and location.
+ * @function reportIncident
+ * @param {Object} req - The request object, containing the incident data.
+ * @param {Object} res - The response object, containing the created incident or error message.
+ * @return {void} Sends a JSON response with the newly created incident or an error message.
+ */
 const reportIncident = async (req, res) => {
     try {
         console.log('Received incident data:', req.body);
@@ -42,7 +54,13 @@ const reportIncident = async (req, res) => {
     }
 };
 
-// Delete incident
+/**
+ * Deletes an incident by ID.
+ * @function deleteIncident
+ * @param {Object} req - The request object, containing the incident ID.
+ * @param {Object} res - The response object, containing a success or error message.
+ * @returns {void} Sends a JSON response indicating the result of the deletion.
+ */
 const deleteIncident = async (req, res) => {
     try {
         console.log('Attempting to delete incident:', req.params.id);
@@ -62,7 +80,13 @@ const deleteIncident = async (req, res) => {
     }
 };
 
-// Get single incident
+/**
+ * Retrieves a single incident by ID.
+ * @function getIncidentById
+ * @param {Object} req - The request object with incident ID.
+ * @param {Object} res - The response object, containing the incident data or an error message.
+ * @returns {void} Sends a JSON response with the requested incident data.
+ */
 const getIncidentById = async (req, res) => {
     try {
         const incident = await Incident.findById(req.params.id);
