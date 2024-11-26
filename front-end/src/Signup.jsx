@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaAngleDoubleLeft } from 'react-icons/fa';
 import axios from 'axios';
+import { API_URL } from './config/api';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/auth/signup`, formData);
+      const response = await axios.post(`${API_URL}/auth/signup`, formData);
       console.log('Signup success:', response.data);
       navigate('/map'); // Redirect on success
     } catch (error) {
