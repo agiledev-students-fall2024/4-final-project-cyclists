@@ -1,8 +1,8 @@
-import bcrypt from 'bcrypt';
-import { User } from '../models/User.js';
+//const bcrypt = require('bcrypt');
+const { User } = require('../models/User.js');
 
 // Signup function
-export const signup = async (req, res) => {
+const signup = async (req, res) => {
     const { email, password, username, name } = req.body;
 
     try {
@@ -31,7 +31,7 @@ export const signup = async (req, res) => {
 };
 
 // Login function
-export const login = async (req, res) => {
+const login = async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -55,7 +55,7 @@ export const login = async (req, res) => {
 };
 
 // Reset Password function
-export const resetPassword = async (req, res) => {
+const resetPassword = async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -73,4 +73,10 @@ export const resetPassword = async (req, res) => {
         console.error('Error resetting password:', err);
         res.status(500).json({ message: 'An error occurred during password reset' });
     }
+};
+
+module.exports = {
+    signup,
+    login,
+    resetPassword
 };

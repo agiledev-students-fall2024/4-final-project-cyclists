@@ -43,7 +43,7 @@ app.use(express.json({ limit: '50mb' })); // middleware to parse JSON requests
 app.use(express.urlencoded({ extended: true }));
 
 // Import Routes
-const authRoutes = require('./routes/auth'); // routes for authentication
+const authRoutes = require('./routes/auth.js'); // routes for authentication
 const userRoutes = require('./routes/users'); // routes for user specific data
 const incidentRoutes = require('./routes/incidents'); // routes for incidents
 const routeRoutes = require('./routes/routes'); // routes for cycling routes
