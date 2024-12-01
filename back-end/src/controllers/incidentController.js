@@ -1,149 +1,88 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-const incidentsPath = path.join(__dirname, '../data/incidents.json');
+const dataDir = path.join(path.resolve(), 'data');
+const incidentsPath = path.join(dataDir, 'incidents.json');
 
-/**
- * Reads incidents from the JSON file.
- * @returns {Array} Array of incidents.
- */
-const readIncidentsFromFile = () => {
-  const data = fs.readFileSync(incidentsPath, 'utf8');
-  return JSON.parse(data);
-};
-
-/**
- * Writes incidents to the JSON file.
- * @param {Array} incidents - Array of incidents to write to the file.
- */
-const writeIncidentsToFile = (incidents) => {
-  fs.writeFileSync(incidentsPath, JSON.stringify(incidents, null, 2), 'utf8');
-};
-
-/**
- * Reports a new incident.
- * @function reportIncident
- * @param {Object} req - Request object with incident data.
- * @param {Object} res - Response object for sending confirmation.
- */
-const reportIncident = (req, res) => {
-  try {
-    // Retrieve incident data from the request body
-    const { image, caption, longitude, latitude, date } = req.body;
-
-    // Check for empty fields
-    if (!image || !caption || !longitude || !latitude || !date) {
-      return res.status(400).json({ message: 'All fields are required.' });
+// Ensure the incidents file exists
+function ensureIncidentsFileExists() {
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir);
     }
+    if (!fs.existsSync(incidentsPath)) {
+        fs.writeFileSync(incidentsPath, JSON.stringify([]), 'utf8');
+        console.log("Initialized incidents.json with an empty array.");
+    }
+}
 
-    // Read current incidents from the JSON file
-    const incidents = readIncidentsFromFile();
+// Helper function to read incidents from the JSON file
+function readIncidentsFromFile() {
+    ensureIncidentsFileExists();
+    const data = fs.readFileSync(incidentsPath, 'utf8');
+    return JSON.parse(data);
+}
 
-    // Create a new incident with a unique ID
-    const newIncident = {
+// Helper function to write incidents to the JSON file
+function writeIncidentsToFile(incidents) {
+    fs.writeFileSync(incidentsPath, JSON.stringify(incidents, null, 2), 'utf8');
+}
+
+// Report a new incident
+export const reportIncident = (req, res) => {
+  const { image, caption, longitude, latitude, date } = req.body;
+
+  if (!image || !caption || longitude === undefined || latitude === undefined || !date) {
+      return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  const incidents = readIncidentsFromFile();
+  const newIncident = {
       id: incidents.length ? incidents[incidents.length - 1].id + 1 : 1,
       image,
       caption,
       longitude,
       latitude,
       date,
-    };
+  };
 
-    // Add the new incident to the array and write back to the file
-    incidents.push(newIncident);
-    writeIncidentsToFile(incidents);
+  incidents.push(newIncident);
+  writeIncidentsToFile(incidents);
 
-    // Send a success response with the created incident
-    res.status(201).json({
+  res.status(201).json({
       message: 'Incident reported successfully',
       incident: newIncident,
-    });
-  } catch (error) {
-    // Handle errors and send a 500 status code with an error message
-    console.error(error);
-    res.status(500).json({ message: 'Failed to report incident', error });
-  }
+  });
 };
 
-/**
- * Retrieves all reported incidents.
- * @function getIncidents
- * @param {Object} req - Request object.
- * @param {Object} res - Response object for sending incidents.
- */
-const getIncidents = async (req, res) => {
-  try {
-    // Read incidents from the JSON file
-    const incidents = readIncidentsFromFile();
 
-    // Send the list of incidents as a response
+// Get all incidents
+export const getIncidents = (req, res) => {
+    const incidents = readIncidentsFromFile();
     res.status(200).json(incidents);
-  } catch (error) {
-    // Handle errors and send a 500 status code with an error message
-    console.error(error);
-    res.status(500).json({ message: 'Failed to retrieve incidents', error });
-  }
 };
 
-/**
- * Retrieves a single incident by ID.
- * @function getIncidentById
- * @param {Object} req - Request object with incident ID.
- * @param {Object} res - Response object for sending the incident.
- */
-const getIncidentById = async (req, res) => {
-  try {
-    // Read incidents from the JSON file
+// Get an incident by ID
+export const getIncidentById = (req, res) => {
     const incidents = readIncidentsFromFile();
+    const incident = incidents.find(i => i.id === parseInt(req.params.id, 10));
 
-    // Find the incident with the matching ID
-    const incident = incidents.find((i) => i.id === parseInt(req.params.id, 10));
-
-    // Send the incident as a response
     if (incident) {
-      res.status(200).json(incident);
+        res.status(200).json(incident);
     } else {
-      res.status(404).json({ message: 'Incident not found' });
+        res.status(404).json({ message: 'Incident not found' });
     }
-  } catch (error) {
-    // Handle errors and send a 500 status code with an error message
-    console.error(error);
-    res.status(500).json({ message: 'Failed to retrieve incident', error });
-  }
-}
+};
 
-/**
- * Deletes an incident by ID.
- * @function deleteIncident
- * @param {Object} req - Request object with incident ID.
- * @param {Object} res - Response object for sending confirmation.
- */
-const deleteIncident = async (req, res) => {
-  try {
-    // Read incidents from the JSON file
+// Delete an incident by ID
+export const deleteIncident = (req, res) => {
     const incidents = readIncidentsFromFile();
+    const index = incidents.findIndex(i => i.id === parseInt(req.params.id, 10));
 
-    // Find the index of the incident with the matching ID
-    const index = incidents.findIndex((i) => i.id === parseInt(req.params.id, 10));
-
-    // Remove the incident from the array if found
     if (index !== -1) {
-      incidents.splice(index, 1);
-      writeIncidentsToFile(incidents);
-      res.status(200).json({ message: 'Incident deleted successfully' });
+        incidents.splice(index, 1);
+        writeIncidentsToFile(incidents);
+        res.status(200).json({ message: 'Incident deleted successfully' });
     } else {
-      res.status(404).json({ message: 'Incident not found' });
+        res.status(404).json({ message: 'Incident not found' });
     }
-  } catch (error) {
-    // Handle errors and send a 500 status code with an error message
-    console.error(error);
-    res.status(500).json({ message: 'Failed to delete incident', error });
-  }
-}
-
-module.exports = {
-  reportIncident,
-  getIncidents,
-  getIncidentById,
-  deleteIncident,
 };

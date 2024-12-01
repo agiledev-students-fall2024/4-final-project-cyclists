@@ -1,15 +1,9 @@
-/**
- * @module userValidator
- * @description Defines validation functions for user input.
- */
-
-class UserValidator {
+export class UserValidator {
     constructor(email, password) {
         this.email = email;
         this.password = password;
     }
 
-    // A method to validate user properties
     static validate(user) {
         const errors = [];
         if (!user.email || !user.email.includes('@')) {
@@ -21,5 +15,3 @@ class UserValidator {
         return errors;
     }
 }
-
-module.exports = UserValidator;

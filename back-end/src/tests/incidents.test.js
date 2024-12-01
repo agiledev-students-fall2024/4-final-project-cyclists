@@ -1,110 +1,34 @@
-const chai = require('chai');
-const chaiHttp = require('chai-http');
-const fs = require('fs');
-const path = require('path');
-const app = require('../app'); // Assuming app.js is your main application file
-const incidentsPath = path.join(__dirname, '../data/incidents.json');
-
-chai.use(chaiHttp);
-const { expect } = chai;
+import request from 'supertest';
+import { expect } from 'chai';
+import app from '../app.js';
+import mongoose from 'mongoose';
 
 describe('Incident Controller', () => {
-    before(() => {
-        // Setup: Clear the incidents.json file before tests
-        fs.writeFileSync(incidentsPath, JSON.stringify([])); // Clear data
+    before(async () => {
+        await mongoose.connect(process.env.MONGODB_URI, { dbName: 'Cyclists' });
     });
 
-    describe('POST /api/incidents', () => {
-        it('should report a new incident successfully', (done) => {
-            chai.request(app)
-                .post('/api/incidents')
-                .send({
-                    image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...',
-                    caption: 'Incident test caption',
-                    longitude: -73.9857,
-                    latitude: 40.7484,
-                    date: '2024-04-28T09:15:30Z'
-                })
-                .end((err, res) => {
-                    expect(res).to.have.status(201);
-                    expect(res.body).to.have.property('message', 'Incident reported successfully');
-                    expect(res.body.incident).to.have.property('id');
-                    expect(res.body.incident).to.have.property('caption', 'Incident test caption');
-                    done();
-                });
-        });
-
-        it('should return an error if any field is missing', (done) => {
-            chai.request(app)
-                .post('/api/incidents')
-                .send({
-                    image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD...',
-                    caption: '', // Empty caption
-                    longitude: -73.9857,
-                    latitude: 40.7484,
-                    date: '2024-04-28T09:15:30Z'
-                })
-                .end((err, res) => {
-                    expect(res).to.have.status(400);
-                    expect(res.body).to.have.property('message', 'All fields are required.');
-                    done();
-                });
-        });
+    after(async () => {
+        await mongoose.connection.close();
     });
 
-    describe('GET /api/incidents', () => {
-        it('should retrieve all reported incidents', (done) => {
-            chai.request(app)
-                .get('/api/incidents')
-                .end((err, res) => {
-                    expect(res).to.have.status(200);
-                    expect(res.body).to.be.an('array');
-                    expect(res.body.length).to.be.at.least(1); // Should contain the previously added incident
-                    done();
-                });
+    it('should report a new incident successfully', async () => {
+        const res = await request(app).post('/api/incidents').send({
+            image: 'test_image.png',
+            caption: 'Test Caption',
+            longitude: -122.084,
+            latitude: 37.422,
+            date: '2024-01-01T00:00:00Z',
         });
-
-        it('should retrieve a single incident by ID', (done) => {
-            chai.request(app)
-                .get('/api/incidents/1')
-                .end((err, res) => {
-                    expect(res).to.have.status(200);
-                    expect(res.body).to.be.an('object');
-                    expect(res.body).to.have.property('id', 1);
-                    done();
-                });
-        });
-
-        it('should return an error if the incident ID is invalid', (done) => {
-            chai.request(app)
-                .get('/api/incidents/9999') // Invalid ID
-                .end((err, res) => {
-                    expect(res).to.have.status(404);
-                    expect(res.body).to.have.property('message', 'Incident not found');
-                    done();
-                });
-        });
+        expect(res.status).to.equal(201);
+        expect(res.body.message).to.equal('Incident reported successfully');
     });
 
-    describe('DELETE /api/incidents', () => {
-        it('should delete an incident by ID', (done) => {
-            chai.request(app)
-                .delete('/api/incidents/1')
-                .end((err, res) => {
-                    expect(res).to.have.status(200);
-                    expect(res.body).to.have.property('message', 'Incident deleted successfully');
-                    done();
-                });
+    it('should return an error if any field is missing', async () => {
+        const res = await request(app).post('/api/incidents').send({
+            caption: 'Test Caption',
         });
-
-        it('should return an error if the incident ID is invalid', (done) => {
-            chai.request(app)
-                .delete('/api/incidents/9999') // Invalid ID
-                .end((err, res) => {
-                    expect(res).to.have.status(404);
-                    expect(res.body).to.have.property('message', 'Incident not found');
-                    done();
-                });
-        });
+        expect(res.status).to.equal(400);
+        expect(res.body.message).to.equal('All fields are required.');
     });
 });

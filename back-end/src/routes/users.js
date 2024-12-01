@@ -1,12 +1,13 @@
-const express = require('express');
-const router = express.Router();
-const {
+import express from 'express';
+import {
   getProfile,
   saveProfile,
   getSavedRoutes,
   addSavedRoute,
   deleteSavedRoute,
-} = require('../controllers/userController');
+} from '../controllers/userController.js';
+
+const router = express.Router();
 
 /**
  * @route GET /api/users/:userId/profile
@@ -18,7 +19,7 @@ router.get('/:userId/profile', getProfile);
  * @route POST /api/users/:userId/profile
  * @description Saves the profile information for a specified user.
  */
- router.post('/:userId/profile', saveProfile); 
+router.post('/:userId/profile', saveProfile);
 
 /**
  * @route GET /api/users/:userId/saved-routes
@@ -38,4 +39,4 @@ router.post('/:userId/saved-routes', addSavedRoute);
  */
 router.delete('/:userId/saved-routes/:routeId', deleteSavedRoute);
 
-module.exports = router;
+export default router;

@@ -1,34 +1,18 @@
-const express = require('express');
+import express from 'express';
+import { login, signup } from '../controllers/authController.js';
+
 const router = express.Router();
-const {
-  getIncidents,
-  getIncidentById,
-  reportIncident,
-  deleteIncident,
-} = require('../controllers/incidentController');
 
 /**
- * @route GET /api/incidents
- * @description Retrieve all reported incidents.
+ * @route POST /api/auth/login
+ * @description Handles user login by verifying credentials.
  */
-router.get('/', getIncidents);
+router.post('/login', login);
 
 /**
- * @route GET /api/incidents/:id
- * @description Retrieve a single incident by ID.
+ * @route POST /api/auth/signup
+ * @description Registers a new user account.
  */
-router.get('/:id', getIncidentById);
+router.post('/signup', signup);
 
-/**
- * @route POST /api/incidents
- * @description Report a new incident.
- */
-router.post('/', reportIncident);
-
-/**
- * @route DELETE /api/incidents/:id
- * @description Delete an incident by ID.
- */
-router.delete('/:id', deleteIncident);
-
-module.exports = router;
+export default router;
