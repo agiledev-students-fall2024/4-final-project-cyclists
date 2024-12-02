@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcrypt';
 
-const dataDir = path.join(path.resolve(), 'data');
+const dataDir = path.join(path.resolve(), 'src/data');
 const usersPath = path.join(dataDir, 'users.json');
 
 // Ensure the data directory and users file exist
