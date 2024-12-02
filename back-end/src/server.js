@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 
-import dotenv from 'dotenv';
-import app from './app.js';
+/**
+ * @module server
+ * @description Initializes and starts the web server.
+ */
 
-dotenv.config();
+import dotenv from 'dotenv'; // import .env variables
+import server from './app.js'; // load the web server
 
-const port = process.env.PORT || 3001;
+dotenv.config(); // load environment variables from .env
+
+const port = process.env.PORT || 3001; // the port to listen to for incoming requests
 
 /**
  * Starts the server and listens on the specified port.
  * @function
  * @returns {http.Server} The server instance.
  */
-const listener = app.listen(port, () => {
+const listener = server.listen(port, () => {
   console.log(`Server running on port: ${port}`);
 });
 
