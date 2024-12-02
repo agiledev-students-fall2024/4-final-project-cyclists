@@ -1,27 +1,12 @@
 import express from 'express';
 import {
-    getIncidents,
-    reportIncident,
-    deleteIncident,
-    getIncidentById,
-} from '../controllers/incidentController.js';
-
-const router = express.Router();
-<<<<<<< HEAD
-
-router.get('/', getIncidents);
-router.post('/', reportIncident);
-router.delete('/:id', deleteIncident);
-router.get('/:id', getIncidentById);
-
-export default router;
-=======
-const {
   getIncidents,
   reportIncident,
   deleteIncident,
   getIncidentById,
-} = require('../controllers/incidentController');
+} from '../controllers/incidentController.js';
+
+const router = express.Router();
 
 /**
  * @route GET /api/incidents
@@ -54,5 +39,4 @@ router.delete('/:id', deleteIncident);
  */
 router.get('/:id', getIncidentById);
 
-module.exports = router;
->>>>>>> e15422f8029015de1230b38f7426817dde5bc56a
+export default router;
