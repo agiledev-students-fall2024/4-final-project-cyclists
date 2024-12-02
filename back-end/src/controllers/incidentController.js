@@ -1,88 +1,78 @@
-import fs from 'fs';
-import path from 'path';
-
-const dataDir = path.join(path.resolve(), 'data');
-const incidentsPath = path.join(dataDir, 'incidents.json');
-
-// Ensure the incidents file exists
-function ensureIncidentsFileExists() {
-    if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir);
-    }
-    if (!fs.existsSync(incidentsPath)) {
-        fs.writeFileSync(incidentsPath, JSON.stringify([]), 'utf8');
-        console.log("Initialized incidents.json with an empty array.");
-    }
-}
-
-// Helper function to read incidents from the JSON file
-function readIncidentsFromFile() {
-    ensureIncidentsFileExists();
-    const data = fs.readFileSync(incidentsPath, 'utf8');
-    return JSON.parse(data);
-}
-
-// Helper function to write incidents to the JSON file
-function writeIncidentsToFile(incidents) {
-    fs.writeFileSync(incidentsPath, JSON.stringify(incidents, null, 2), 'utf8');
-}
-
-// Report a new incident
-export const reportIncident = (req, res) => {
-  const { image, caption, longitude, latitude, date } = req.body;
-
-  if (!image || !caption || longitude === undefined || latitude === undefined || !date) {
-      return res.status(400).json({ message: 'All fields are required.' });
-  }
-
-  const incidents = readIncidentsFromFile();
-  const newIncident = {
-      id: incidents.length ? incidents[incidents.length - 1].id + 1 : 1,
-      image,
-      caption,
-      longitude,
-      latitude,
-      date,
-  };
-
-  incidents.push(newIncident);
-  writeIncidentsToFile(incidents);
-
-  res.status(201).json({
-      message: 'Incident reported successfully',
-      incident: newIncident,
-  });
-};
-
+import Incident from '../models/Incident.js';
 
 // Get all incidents
-export const getIncidents = (req, res) => {
-    const incidents = readIncidentsFromFile();
-    res.status(200).json(incidents);
-};
-
-// Get an incident by ID
-export const getIncidentById = (req, res) => {
-    const incidents = readIncidentsFromFile();
-    const incident = incidents.find(i => i.id === parseInt(req.params.id, 10));
-
-    if (incident) {
-        res.status(200).json(incident);
-    } else {
-        res.status(404).json({ message: 'Incident not found' });
+export const getIncidents = async (req, res) => {
+    try {
+        const incidents = await Incident.find().sort({ date: -1 });
+        res.json(incidents);
+    } catch (error) {
+        console.error('Error getting incidents:', error);
+        res.status(500).json({ error: 'Failed to get incidents' });
     }
 };
 
-// Delete an incident by ID
-export const deleteIncident = (req, res) => {
-    const incidents = readIncidentsFromFile();
-    const index = incidents.findIndex(i => i.id === parseInt(req.params.id, 10));
+// Report new incident
+export const reportIncident = async (req, res) => {
+    try {
+        console.log('Received incident data:', req.body);
 
-    if (index !== -1) {
-        incidents.splice(index, 1);
-        writeIncidentsToFile(incidents);
-        res.status(200).json({ message: 'Incident deleted successfully' });
-    } else {
-        res.status(404).json({ message: 'Incident not found' });
+        const newIncident = new Incident({
+            image: req.body.image,
+            caption: req.body.caption,
+            location: {
+                type: 'Point',
+                coordinates: [
+                    parseFloat(req.body.longitude),
+                    parseFloat(req.body.latitude),
+                ],
+            },
+            date: new Date(),
+        });
+
+        const savedIncident = await newIncident.save();
+        console.log('Incident saved successfully:', {
+            ...savedIncident.toObject(),
+            image: '[truncated]',
+        });
+        res.status(201).json(savedIncident);
+    } catch (error) {
+        console.error('Error saving incident:', error);
+        res.status(500).json({ error: 'Failed to save incident' });
+    }
+};
+
+// Delete incident
+export const deleteIncident = async (req, res) => {
+    try {
+        console.log('Attempting to delete incident:', req.params.id);
+
+        const incident = await Incident.findByIdAndDelete(req.params.id);
+
+        if (!incident) {
+            console.log('Incident not found:', req.params.id);
+            return res.status(404).json({ error: 'Incident not found' });
+        }
+
+        console.log('Incident deleted successfully:', req.params.id);
+        res.json({ message: 'Incident deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting incident:', error);
+        res.status(500).json({ error: 'Failed to delete incident' });
+    }
+};
+
+// Get single incident
+export const getIncidentById = async (req, res) => {
+    try {
+        const incident = await Incident.findById(req.params.id);
+
+        if (!incident) {
+            return res.status(404).json({ error: 'Incident not found' });
+        }
+
+        res.json(incident);
+    } catch (error) {
+        console.error('Error getting incident:', error);
+        res.status(500).json({ error: 'Failed to get incident' });
     }
 };
