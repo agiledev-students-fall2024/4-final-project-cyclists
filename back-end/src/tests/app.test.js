@@ -1,20 +1,14 @@
-const chai = require('chai');
-const chaiHttp = require('chai-http');
-const sinon = require('sinon');
-const mongoose = require('mongoose');
-const app = require('../app');
+import chai from 'chai';
+import chaiHttp from 'chai-http';
+import sinon from 'sinon';
+import app from '../app.js';
 
 chai.use(chaiHttp);
 const { expect } = chai;
 
 describe('App Tests', () => {
-  // close the mongoose connection after all tests
-  after(async () => {
-    await mongoose.connection.close();
-  });
-
   describe('CORS OPTIONS Request Handling', () => {
-    it('should respond with 200 status for preflight requests', done => {
+    it('should respond with 200 status for preflight requests', (done) => {
       chai
         .request(app)
         .options('/')
@@ -33,7 +27,7 @@ describe('App Tests', () => {
     after(() => {
       consoleErrorStub.restore();
     });
-    it('should log the error and return the correct status and message', done => {
+    it('should log the error and return the correct status and message', (done) => {
       chai
         .request(app)
         .get('/error-route')
@@ -50,7 +44,7 @@ describe('App Tests', () => {
   });
 
   describe('GET / Route', () => {
-    it('should respond with "Goodbye world!"', done => {
+    it('should respond with "Goodbye world!"', (done) => {
       chai
         .request(app)
         .get('/')

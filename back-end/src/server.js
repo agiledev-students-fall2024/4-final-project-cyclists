@@ -5,9 +5,10 @@
  * @description Initializes and starts the web server.
  */
 
-require('dotenv').config();  // Load environment variables from .env
+import dotenv from 'dotenv'; // import .env variables
+import server from './app.js'; // load the web server
 
-const server = require('./app'); // load the web server
+dotenv.config(); // load environment variables from .env
 
 const port = process.env.PORT || 3001; // the port to listen to for incoming requests
 
@@ -16,7 +17,7 @@ const port = process.env.PORT || 3001; // the port to listen to for incoming req
  * @function
  * @returns {http.Server} The server instance.
  */
-const listener = server.listen(port, function () {
+const listener = server.listen(port, () => {
   console.log(`Server running on port: ${port}`);
 });
 
@@ -25,10 +26,6 @@ const listener = server.listen(port, function () {
  * @function
  * @returns {void}
  */
-const close = () => {
+export const close = () => {
   listener.close();
-};
-
-module.exports = {
-  close: close,
 };

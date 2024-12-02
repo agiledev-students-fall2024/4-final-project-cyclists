@@ -1,8 +1,4 @@
-/**
- * @module userController
- */
-// const User = require('../models/User'); // Example model import
-const profiles = {}; 
+const profiles = {};
 
 /**
  * Retrieves user profile information.
@@ -10,7 +6,7 @@ const profiles = {};
  * @param {Object} req - Request object with user ID.
  * @param {Object} res - Response object for sending the user profile.
  */
- const getProfile = async (req, res) => {
+export const getProfile = async (req, res) => {
   const userId = req.params.userId;
 
   try {
@@ -19,7 +15,9 @@ const profiles = {};
     }
     res.status(200).send(profiles[userId]);
   } catch (err) {
-    res.status(500).send({ message: 'An error occurred while retrieving the profile' });
+    res
+      .status(500)
+      .send({ message: 'An error occurred while retrieving the profile' });
   }
 };
 
@@ -29,19 +27,23 @@ const profiles = {};
  * @param {Object} req - Request object with user ID and profile data.
  * @param {Object} res - Response object for sending confirmation.
  */
- const saveProfile = async (req, res) => {
+export const saveProfile = async (req, res) => {
   const userId = req.params.userId;
   const profileData = req.body;
 
   if (!profileData.name || !profileData.email) {
-    return res.status(400).send({ message: 'Missing required fields: name or email' });
+    return res
+      .status(400)
+      .send({ message: 'Missing required fields: name or email' });
   }
 
   try {
     profiles[userId] = profileData; // Save profile in the mocked database
     res.status(200).send({ message: 'Profile saved successfully' });
   } catch (err) {
-    res.status(500).send({ message: 'An error occurred while saving the profile' });
+    res
+      .status(500)
+      .send({ message: 'An error occurred while saving the profile' });
   }
 };
 
@@ -51,7 +53,7 @@ const profiles = {};
  * @param {Object} req - Request object with user ID.
  * @param {Object} res - Response object for sending saved routes.
  */
- const getSavedRoutes = async (req, res) => {
+export const getSavedRoutes = async (req, res) => {
   // Replace with implementation for fetching saved routes
   res.status(200).send({ message: 'Saved routes not implemented yet' });
 };
@@ -62,7 +64,7 @@ const profiles = {};
  * @param {Object} req - Request object with route data.
  * @param {Object} res - Response object for sending confirmation.
  */
- const addSavedRoute = async (req, res) => {
+export const addSavedRoute = async (req, res) => {
   // Replace with implementation for adding a saved route
   res.status(200).send({ message: 'Add saved route not implemented yet' });
 };
@@ -73,15 +75,7 @@ const profiles = {};
  * @param {Object} req - Request object with user ID and route ID.
  * @param {Object} res - Response object for sending confirmation.
  */
- const deleteSavedRoute = async (req, res) => {
+export const deleteSavedRoute = async (req, res) => {
   // Replace with implementation for deleting a saved route
   res.status(200).send({ message: 'Delete saved route not implemented yet' });
-};
-
-module.exports = {
-  getProfile,
-  saveProfile, // Added saveProfile
-  getSavedRoutes,
-  addSavedRoute,
-  deleteSavedRoute,
 };

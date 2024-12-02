@@ -1,17 +1,19 @@
-// Import required modules
-require('dotenv').config(); // import .env variables
-const express = require('express');
-const morgan = require('morgan'); // middleware for logging HTTP requests
-const mongoose = require('mongoose'); // mongoose models for MongoDB data manipulation
-
 /**
  * @module app
  * @description Express application setup and route management.
  */
 
+// Import required modules
+import dotenv from 'dotenv'; // import .env variables
+import express from 'express';
+import morgan from 'morgan'; // middleware for logging HTTP requests
+import mongoose from 'mongoose'; // mongoose models for MongoDB data manipulation
+
+dotenv.config();
+
 const app = express(); // instantiate an Express object
 
-// connect to the database
+// Connect to the database
 try {
   mongoose.connect(process.env.MONGODB_URI);
   console.log(`Connected to MongoDB.`);
@@ -43,16 +45,18 @@ app.use(express.json({ limit: '50mb' })); // middleware to parse JSON requests
 app.use(express.urlencoded({ extended: true }));
 
 // Import Routes
-const authRoutes = require('./routes/auth'); // routes for authentication
-const userRoutes = require('./routes/users'); // routes for user specific data
-const incidentRoutes = require('./routes/incidents'); // routes for incidents
-const routeRoutes = require('./routes/routes'); // routes for cycling routes
+import authRoutes from './routes/auth.js'; // routes for authentication
+import userRoutes from './routes/users.js'; // routes for user specific data
+import incidentRoutes from './routes/incidents.js'; // routes for incidents
+import routeRoutes from './routes/routes.js'; // routes for cycling routes
+import profileRoutes from './routes/profile.js'; // routes for user profile
 
 // Use Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/routes', routeRoutes);
+app.use('/api/profiles', profileRoutes);
 
 // Route that triggers an internal error (500)
 app.get('/error-route', (req, res, next) => {
@@ -81,4 +85,4 @@ app.get('/', (req, res) => {
 });
 
 // export the express app we created to make it available to other modules
-module.exports = app;
+export default app;
