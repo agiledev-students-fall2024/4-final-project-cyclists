@@ -64,22 +64,15 @@ const userSchema = new mongoose.Schema({
     timestamps: true,  // Automatically add createdAt and updatedAt timestamps
 });
 
-// Pre-save hook to hash the password before saving to the database
+// Pre-save hook to skip password hashing
 userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next(); // If password is not modified, skip hashing
-
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt); // Hash the password
-        next();
-    } catch (err) {
-        next(err); // Pass any error to the next middleware
-    }
+    if (!this.isModified('password')) return next(); // Skip if password is not modified
+    next(); // No hashing done here
 });
 
-// Method to compare entered password with the stored hashed password
+// Method to compare entered password with the stored password
 userSchema.methods.comparePassword = async function (password) {
-    return bcrypt.compare(password, this.password); // Compare hashed password
+    return password === this.password; // Direct password comparison (no hashing)
 };
 
 // Create User model from the schema
