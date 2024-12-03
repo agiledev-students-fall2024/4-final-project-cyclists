@@ -1,67 +1,54 @@
 import chai from 'chai';
 import chaiHttp from 'chai-http';
-import sinon from 'sinon';
-import fs from 'fs/promises';
-import path from 'path';
+import mongoose from 'mongoose';
 import app from '../app.js';
+import Route from '../models/Route.js';
 
 chai.use(chaiHttp);
 const { expect } = chai;
 
 describe('Routes Tests', () => {
-  let fsReadStub;
-  let fsWriteStub;
-  let fsMkdirStub;
-  let pathJoinStub;
-  const testFilePath = '/mock/path/routes.json';
+    const mockRoutes = [
+        {
+            name: 'Test Route 1',
+            start_location: 'Start 1',
+            end_location: 'End 1',
+            distance: 5.2,
+            duration: 15, // Updated to a number
+            geometry: 'Mock geometry 1',
+            origin: 'Origin 1',
+            destination: 'Destination 1',
+        },
+        {
+            name: 'Test Route 2',
+            start_location: 'Start 2',
+            end_location: 'End 2',
+            distance: 10.5,
+            duration: 30, // Updated to a number
+            geometry: 'Mock geometry 2',
+            origin: 'Origin 2',
+            destination: 'Destination 2',
+        },
+    ];
 
-  const mockRoutes = {
-    routes: [
-      {
-        id: '1',
-        name: 'Test Route 1',
-        start_location: 'Start 1',
-        end_location: 'End 1',
-        date: '2024-03-08T10:00:00.000Z',
-      },
-      {
-        id: '2',
-        name: 'Test Route 2',
-        start_location: 'Start 2',
-        end_location: 'End 2',
-        date: '2024-03-08T11:00:00.000Z',
-      },
-    ],
-  };
+    before(async () => {
+        await mongoose.connect(process.env.MONGODB_URI, { dbName: 'Cyclists' });
 
-  before(() => {
-    fsReadStub = sinon.stub(fs, 'readFile');
-    fsWriteStub = sinon.stub(fs, 'writeFile');
-    fsMkdirStub = sinon.stub(fs, 'mkdir');
-    pathJoinStub = sinon.stub(path, 'join').returns(testFilePath);
+        // Clear and seed the database with mock data
+        await Route.deleteMany({});
+        await Route.insertMany(mockRoutes);
+    });
 
-    fsReadStub.resolves(JSON.stringify(mockRoutes));
-    fsWriteStub.resolves();
-    fsMkdirStub.resolves();
-  });
+    after(async () => {
+        await mongoose.connection.close();
+    });
 
-  after(() => {
-    sinon.restore();
-  });
-
-  describe('GET /api/routes', () => {
-    it('should return all routes', (done) => {
-      chai
-        .request(app)
-        .get('/api/routes')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.body).to.be.an('array');
-          expect(res.body).to.have.lengthOf(2);
-          done();
+    describe('GET /api/routes', () => {
+        it('should return all routes', async () => {
+            const res = await chai.request(app).get('/api/routes');
+            expect(res).to.have.status(200);
+            expect(res.body).to.be.an('array');
+            expect(res.body).to.have.lengthOf(2);
         });
     });
-  });
-
-  // Add other route-related tests here
 });
