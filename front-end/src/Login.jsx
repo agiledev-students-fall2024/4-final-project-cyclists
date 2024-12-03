@@ -18,19 +18,29 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Trim any whitespace from the email and password
+    const trimmedEmail = formData.email.trim();
+    const trimmedPassword = formData.password.trim();
+
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, formData);
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email: trimmedEmail,
+        password: trimmedPassword
+      });
+
       console.log('Login success:', response.data);
       
-      // Assuming the response contains the user's name
-      if (response.data && response.data.name) {
-        localStorage.setItem('user', JSON.stringify({ name: response.data.name }));
-        console.log('User saved to localStorage:', response.data.name);  // Log the user data
+      // Assuming the response contains the user's username
+      if (response.data && response.data.username) {
+        localStorage.setItem('user', JSON.stringify({ username: response.data.username }));
+        console.log('User saved to localStorage:', response.data.username);  // Log the user data
       }
       
       navigate('/map'); // Redirect on success
     } catch (error) {
       console.error('Login failed:', error);
+      setError('Invalid email or password'); // Set error message to display in case of failure
     }
   };
 
@@ -53,7 +63,7 @@ const Login = () => {
               id='email' 
               value={formData.email} 
               onChange={handleChange} 
-              className='mt-1 block w-full rounded-md border border-gray-300 p-2' 
+              className='m-1 block w-full rounded-md border border-gray-300 p-2' 
               required 
             />
           </div>
@@ -74,7 +84,12 @@ const Login = () => {
             Login
           </button>
         </form>
-        <p className='mt-4'>Don't have an account? <Link to='/signup' className='text-emerald-800'>Sign up</Link></p>
+        <p className='mt-4 text-center'>
+          <Link to='/forgot-password' className='text-emerald-800'>Forgot Password?</Link>
+        </p>
+        <p className='mt-4 text-center'>
+          Don't have an account? <Link to='/signup' className='text-emerald-800'>Sign up</Link>
+        </p>
       </div>
     </div>
   );

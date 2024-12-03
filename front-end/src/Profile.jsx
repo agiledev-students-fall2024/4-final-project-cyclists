@@ -23,16 +23,27 @@ const Profile = () => {
     const fetchRoutes = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${API_URL}/routes`);
+        // Retrieve token from local storage
+        const token = localStorage.getItem('token');
+    
+        // Make an authorized request
+        const response = await fetch(`${API_URL}/routes`, {
+          headers: {
+            Authorization: `Bearer ${token}`, // Add the token to the Authorization header
+          },
+        });
+    
         if (!response.ok) {
           throw new Error('Failed to fetch routes');
         }
+    
         const data = await response.json();
         // Sort routes by date (newest first) and take only the latest 5
         const sortedRoutes = data
           .sort((a, b) => new Date(b.date) - new Date(a.date))
           .slice(0, 5);
-        setUserInfo(prevInfo => ({ ...prevInfo, routes: sortedRoutes }));
+    
+        setUserInfo((prevInfo) => ({ ...prevInfo, routes: sortedRoutes }));
         setError(null);
       } catch (error) {
         console.error('Error fetching routes:', error);

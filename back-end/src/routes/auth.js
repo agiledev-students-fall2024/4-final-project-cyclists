@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, signup } from '../controllers/authController.js';
+import { login, signup, forgotPassword, resetPassword } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -14,5 +14,17 @@ router.post('/login', login);
  * @description Registers a new user account.
  */
 router.post('/signup', signup);
+
+/**
+ * @route POST /api/auth/forgot-password
+ * @description Verifies if the email exists in the system for password recovery.
+ */
+router.post('/forgot-password', forgotPassword);
+
+/**
+ * @route POST /api/auth/reset-password
+ * @description Resets the user's password after verifying the email.
+ */
+router.post('/reset-password', resetPassword);
 
 export default router;

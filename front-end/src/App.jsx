@@ -6,8 +6,10 @@ import Profile from './Profile';
 import EditProfile from './EditProfile';
 import Map from './Map';
 import SavedRoutes from './SavedRoutes';
-import Login from './Login'; // Import the Login component
-import Signup from './Signup'; // Import the Signup component
+import Login from './Login'; 
+import Signup from './Signup'; 
+import ForgotPassword from './ForgotPassword';
+import ResetPassword from './ResetPassword';
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
           <Route path='/saved-routes' element={<SavedRoutes />} />
           <Route path='/login' element={<Login />} /> {/* Add Login route */}
           <Route path='/signup' element={<Signup />} /> {/* Add Signup route */}
+          <Route path='/forgot-password' element={<ForgotPassword />} /> {/* Add Forgot Password route */}
+          <Route path='/reset-password' element={<ResetPassword />} /> {/* Add Reset Password route */}
         </Routes>
       </main>
     </Router>
