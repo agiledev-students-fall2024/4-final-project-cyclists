@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';  // Ensure the correct model path
 
@@ -19,15 +19,11 @@ export const signup = async (req, res) => {
       return res.status(409).json({ message: 'User already exists' });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    console.log('Generated password hash:', hashedPassword); // Debug log to check the hash
-
     // Create a new user with username, email, and hashed password
     const newUser = new User({
       username,
       email,
-      password,  // Store hashed password
+      password,
     });
 
     // Save the user to the database
@@ -53,7 +49,6 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   console.log('Login Request:', { email });
-  console.log('Entered password:', password); // Log entered password
 
   try {
     // Find the user by email
@@ -67,7 +62,7 @@ export const login = async (req, res) => {
     console.log('Stored password (hashed):', user.password);
 
     // Use bcrypt.compare with async/await to compare the passwords
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       console.log('Invalid password credential for user:', email);

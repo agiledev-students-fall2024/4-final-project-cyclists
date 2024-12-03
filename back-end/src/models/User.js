@@ -1,25 +1,5 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-
-// Define route schema for user
-const routeSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
-    },
-    startLocation: {
-        type: String,
-        required: true,
-    },
-    endLocation: {
-        type: String,
-        required: true,
-    },
-    dateCreated: {
-        type: Date,
-        default: Date.now,
-    },
-});
+import bcrypt from 'bcrypt';
 
 // Define user schema
 const userSchema = new mongoose.Schema({
@@ -59,15 +39,25 @@ const userSchema = new mongoose.Schema({
             'Prefer not to say',
         ],
     },
-    savedRoutes: [routeSchema],  // Embedding route schema within user
+    savedRoutes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Route',  // Reference the Route model
+    }],
 }, {
     timestamps: true,  // Automatically add createdAt and updatedAt timestamps
 });
 
 // Pre-save hook to skip password hashing
 userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next(); // Skip if password is not modified
-    next(); // No hashing done here
+    if (!this.isModified('password')) return next(); // If password is not modified, skip hashing
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt); // Hash the password
+        console.log('pre save password', this.password)
+        next();
+    } catch (err) {
+        next(err); // Pass any error to the next middleware
+    }
 });
 
 // Method to compare entered password with the stored password
