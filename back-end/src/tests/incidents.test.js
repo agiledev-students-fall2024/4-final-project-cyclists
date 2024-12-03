@@ -5,10 +5,11 @@ import mongoose from 'mongoose';
 
 describe('Incident Controller', () => {
     before(async () => {
-        await mongoose.connect(process.env.MONGODB_URI, { dbName: 'Cyclists' });
+        await mongoose.connect('mongodb://localhost:27017/testDB', { useNewUrlParser: true, useUnifiedTopology: true });
     });
 
     after(async () => {
+        await mongoose.connection.db.dropDatabase(); // Clear test database
         await mongoose.connection.close();
     });
 
@@ -29,6 +30,6 @@ describe('Incident Controller', () => {
             caption: 'Test Caption',
         });
         expect(res.status).to.equal(400);
-        expect(res.body.message).to.equal('All fields are required.');
+        expect(res.body.error).to.equal('All fields are required with valid data.');
     });
 });

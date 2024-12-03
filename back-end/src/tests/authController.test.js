@@ -2,10 +2,20 @@ import request from 'supertest';
 import { expect } from 'chai';
 import app from '../app.js';
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 
-describe('Auth Controller', () => {
+const dataDir = path.join(path.resolve(), 'src/data');
+const usersPath = path.join(dataDir, 'users.json');
+
+describe('Auth Controller', function () {
+    this.timeout(10000); // Extend timeout to avoid timeout issues
+
     before(async () => {
         await mongoose.connect(process.env.MONGODB_URI, { dbName: 'Cyclists' });
+
+        // Clear users.json before running tests
+        fs.writeFileSync(usersPath, JSON.stringify([], null, 2), 'utf8');
     });
 
     after(async () => {

@@ -1,6 +1,6 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
-import Profile from '../models/profile.js';
+import Profile from '../models/Profile.js';
 
 const router = express.Router();
 
