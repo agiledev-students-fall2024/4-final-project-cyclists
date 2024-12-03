@@ -8,10 +8,8 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
-// Retrieve the email from the state passed from ForgotPassword.jsx
-const { state } = useLocation();
-const email = state?.email;
+  const { state } = useLocation();
+  const email = state?.email;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +20,7 @@ const email = state?.email;
 
     try {
       // Send request to reset password
-      const response = await axios.post(`${API_URL}/auth/reset-password`, { email: 'user-email', password });
+      const response = await axios.post(`${API_URL}/auth/reset-password`, { email , password });
       if (response.data.message === 'Password updated successfully') {
         navigate('/login');  // Redirect to login page after successful password update
       }

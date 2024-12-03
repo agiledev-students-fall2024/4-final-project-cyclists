@@ -52,24 +52,27 @@ export const login = async (req, res) => {
   const trimmedEmail = email.trim();
   const trimmedPassword = password.trim();
 
+
   try {
     // Find the user by email
     const user = await User.findOne({ email: trimmedEmail });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log('Invalid email credential')
+      return res.status(401).json({ message: 'Invalid email credential' });
     }
 
     // Compare the entered password with the stored hashed password
     const isPasswordValid = await bcrypt.compare(trimmedPassword, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log('Invalid password credential')
+      return res.status(401).json({ message: 'Invalid password credential' });
     }
 
     // Generate JWT token
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
     // Send response with token and username
@@ -86,9 +89,9 @@ export const resetPassword = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    //if (!user) {
+      //return res.status(404).json({ message: 'User not found' });
+    //}
 
     // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
