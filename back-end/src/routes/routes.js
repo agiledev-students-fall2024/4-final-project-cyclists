@@ -1,12 +1,18 @@
 import express from 'express';
 import Route from '../models/Route.js';
+import { verifyToken } from '../middleware/auth.js'; // Import the verifyToken middleware
 
 const router = express.Router();
 
-// Get all routes
-router.get('/', async (req, res) => {
+/**
+ * @route GET /routes
+ * @desc Get all routes for the authenticated user
+ * @access Private (requires authentication)
+ */
+router.get('/', verifyToken, async (req, res) => {
   try {
-    const routes = await Route.find().sort({ date: -1 });
+    const userId = req.user.id; // Extract the user ID from the JWT token
+    const routes = await Route.find({ userId }).sort({ date: -1 }); // Only fetch routes for the logged-in user
     res.status(200).json(routes);
   } catch (error) {
     console.error('Error getting routes:', error);
@@ -14,12 +20,18 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Save a new route
-router.post('/', async (req, res) => {
+/**
+ * @route POST /routes
+ * @desc Save a new route for the authenticated user
+ * @access Private (requires authentication)
+ */
+router.post('/', verifyToken, async (req, res) => {
   try {
+    const userId = req.user.id; // Extract the user ID from the JWT token
     console.log('Received route data:', req.body);
 
     const fields = {
+      userId, // 👈 Attach the user ID to the route
       name: req.body.name,
       start_location: req.body.start_location,
       end_location: req.body.end_location,
@@ -30,11 +42,12 @@ router.post('/', async (req, res) => {
       destination: req.body.destination,
     };
 
+    // Check if any of the required fields are missing
     if (Object.values(fields).some(value => !value)) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const newRoute = new Route(fields);
+    const newRoute = new Route(fields); // Attach all the data including userId
     const savedRoute = await newRoute.save();
     console.log('Route saved successfully:', savedRoute);
     res.status(201).json(savedRoute);
@@ -44,19 +57,29 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Delete a route by ID
-router.delete('/:id', async (req, res) => {
+/**
+ * @route DELETE /routes/:id
+ * @desc Delete a specific route (only the route owner can delete)
+ * @access Private (requires authentication)
+ */
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
-    console.log('Attempting to delete route:', req.params.id);
+    const userId = req.user.id; // Extract the user ID from the JWT token
+    const routeId = req.params.id;
 
-    const route = await Route.findByIdAndDelete(req.params.id);
+    console.log('Attempting to delete route:', routeId);
+
+    // Find the route and check if it belongs to the current user
+    const route = await Route.findOne({ _id: routeId, userId });
 
     if (!route) {
-      console.log('Route not found:', req.params.id);
-      return res.status(404).json({ error: 'Route not found' });
+      console.log('Route not found or does not belong to user:', routeId);
+      return res.status(404).json({ error: 'Route not found or does not belong to you' });
     }
 
-    console.log('Route deleted successfully:', req.params.id);
+    await Route.findByIdAndDelete(routeId);
+
+    console.log('Route deleted successfully:', routeId);
     res.json({ message: 'Route deleted successfully' });
   } catch (error) {
     console.error('Error deleting route:', error);
@@ -64,13 +87,20 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Get a single route by ID
-router.get('/:id', async (req, res) => {
+/**
+ * @route GET /routes/:id
+ * @desc Get a single route by its ID (only the owner can view it)
+ * @access Private (requires authentication)
+ */
+router.get('/:id', verifyToken, async (req, res) => {
   try {
-    const route = await Route.findById(req.params.id);
+    const userId = req.user.id; // Extract the user ID from the JWT token
+    const routeId = req.params.id;
+
+    const route = await Route.findOne({ _id: routeId, userId }); // Ensure the route belongs to the user
 
     if (!route) {
-      return res.status(404).json({ error: 'Route not found' });
+      return res.status(404).json({ error: 'Route not found or does not belong to you' });
     }
 
     res.status(200).json(route);
