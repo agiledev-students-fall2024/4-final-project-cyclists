@@ -8,7 +8,7 @@ const RouteSchema = new mongoose.Schema(
       ref: 'User',
       required: false, // Changed from true to false for now for the above reason
     },
-    username: {
+    user: {
       type: String,
       required: true,
     },

@@ -12,7 +12,7 @@ const router = express.Router();
 router.get('/', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id; // Extract the user ID from the JWT token
-    const routes = await Route.find({ userId }).sort({ date: -1 }); // Only fetch routes for the logged-in user
+    const routes = await Route.find({ user: userId }).sort({ date: -1 }); // ✅ Use `user` instead of `userId`
     res.status(200).json(routes);
   } catch (error) {
     console.error('Error getting routes:', error);
@@ -28,26 +28,29 @@ router.get('/', verifyToken, async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id; // Extract the user ID from the JWT token
+    const username = req.user.username; // ✅ Extract the username from the JWT token
     console.log('Received route data:', req.body);
 
     const fields = {
-      userId, // 👈 Attach the user ID to the route
+      user: userId, // ✅ Attach the user ID as an ObjectId
+      username, // ✅ Attach the username from the JWT token
       name: req.body.name,
       start_location: req.body.start_location,
       end_location: req.body.end_location,
       distance: req.body.distance,
       duration: req.body.duration,
       geometry: req.body.geometry,
+      steps: req.body.steps,
       origin: req.body.origin,
       destination: req.body.destination,
     };
 
     // Check if any of the required fields are missing
-    if (Object.values(fields).some(value => !value)) {
+    if (Object.values(fields).some(value => value === undefined || value === null)) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const newRoute = new Route(fields); // Attach all the data including userId
+    const newRoute = new Route(fields);
     const savedRoute = await newRoute.save();
     console.log('Route saved successfully:', savedRoute);
     res.status(201).json(savedRoute);
@@ -70,7 +73,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     console.log('Attempting to delete route:', routeId);
 
     // Find the route and check if it belongs to the current user
-    const route = await Route.findOne({ _id: routeId, userId });
+    const route = await Route.findOne({ _id: routeId, user: userId }); // ✅ Use `user` instead of `userId`
 
     if (!route) {
       console.log('Route not found or does not belong to user:', routeId);
@@ -97,7 +100,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     const userId = req.user.id; // Extract the user ID from the JWT token
     const routeId = req.params.id;
 
-    const route = await Route.findOne({ _id: routeId, userId }); // Ensure the route belongs to the user
+    const route = await Route.findOne({ _id: routeId, user: userId }); // ✅ Use `user` instead of `userId`
 
     if (!route) {
       return res.status(404).json({ error: 'Route not found or does not belong to you' });

@@ -12,11 +12,11 @@ export const signup = async (req, res) => {
   }
 
   try {
-    // Check if the user already exists by email
-    const existingUser = await User.findOne({ email });
+    // Check if the user already exists by email or username
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       console.log('User already exists:', email);
-      return res.status(409).json({ message: 'User already exists' });
+      return res.status(409).json({ message: 'User with this email or username already exists' });
     }
 
     // Create a new user with username, email, and hashed password
@@ -30,14 +30,14 @@ export const signup = async (req, res) => {
     await newUser.save();
     console.log('New user created:', newUser);
 
-    // Generate JWT token
+    // Generate JWT token with user id, username, and email
     const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { id: newUser._id, username: newUser.username, email: newUser.email }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '7d' }
     );
 
-    res.status(201).json({ message: 'User registered successfully', token });
+    res.status(201).json({ message: 'User registered successfully', token, username: newUser.username });
   } catch (err) {
     console.error('Error during signup:', err);
     res.status(500).json({ message: 'An error occurred during signup' });
@@ -48,35 +48,26 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
-  console.log('Login Request:', { email });
-
   try {
-    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
-      console.log('Invalid email credential:', email);
-      return res.status(401).json({ message: 'Invalid email credential' });
+      console.log('Invalid email:', email);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    console.log('Entered password:', password);
-    console.log('Stored password (hashed):', user.password);
-
-    // Use bcrypt.compare with async/await to compare the passwords
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
-      console.log('Invalid password credential for user:', email);
-      return res.status(401).json({ message: 'Invalid password credential' });
+      console.log('Invalid password for email:', email);
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // If passwords match, generate JWT token
+    // Generate JWT token with user id, username, and email
     const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { id: user._id, username: user.username, email: user.email }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '7d' }
     );
 
-    console.log('User logged in:', user.username);
     res.status(200).json({ message: 'Login successful', token, username: user.username });
   } catch (err) {
     console.error('Error during login:', err);
@@ -89,6 +80,10 @@ export const resetPassword = async (req, res) => {
   const { email, password } = req.body;
   console.log('Reset Password Request:', { email });  // Debug log
 
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+
   try {
     const user = await User.findOne({ email });
     if (!user) {
@@ -96,9 +91,9 @@ export const resetPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update the password and save, triggering the pre-save hook
-    user.password = password;  // Plain text; will be hashed by the pre-save hook
-    await user.save();  // This will hash the password
+    // Update the password and save, triggering the pre-save hook to hash the password
+    user.password = password;
+    await user.save();
 
     console.log('Password updated for user:', email);
     res.status(200).json({ message: 'Password updated successfully' });
@@ -112,6 +107,10 @@ export const resetPassword = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   console.log('Forgot Password Request:', { email });  // Debug log
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
 
   try {
     const user = await User.findOne({ email });

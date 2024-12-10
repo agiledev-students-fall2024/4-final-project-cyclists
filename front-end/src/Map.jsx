@@ -11,60 +11,6 @@ import { API_URL } from './config/api';
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
-// TODO: pull incident data from the back-end
-// Mock JSON data
-const mockData = [
-  { id: 1, coordinates: [-73.998, 40.732], title: 'Pothole', minZoom: 18 },
-  {
-    id: 2,
-    coordinates: [-73.999, 40.725],
-    title: 'Blocked Bike Lane',
-    minZoom: 18,
-  },
-  {
-    id: 3,
-    coordinates: [-73.999, 40.731],
-    title: 'Aggressive Driver',
-    minZoom: 18,
-  },
-  {
-    id: 4,
-    coordinates: [-73.983, 40.733],
-    title: 'Road Construction',
-    minZoom: 18,
-  },
-  {
-    id: 5,
-    coordinates: [-73.992, 40.722],
-    title: 'Car Door Hazard',
-    minZoom: 18,
-  },
-  {
-    id: 6,
-    coordinates: [-73.987, 40.738],
-    title: 'Pedestrian in Bike Lane',
-    minZoom: 18,
-  },
-  {
-    id: 7,
-    coordinates: [-73.996, 40.725],
-    title: 'Unmarked Intersection',
-    minZoom: 18,
-  },
-  {
-    id: 8,
-    coordinates: [-73.986, 40.732],
-    title: 'Slippery Surface',
-    minZoom: 18,
-  },
-  {
-    id: 9,
-    coordinates: [-73.976, 40.719],
-    title: 'Obstructed View',
-    minZoom: 18,
-  },
-];
-
 function Map() {
   const navigate = useNavigate();
   const mapContainerRef = useRef(null);
@@ -85,24 +31,30 @@ function Map() {
       setSaveStatus('No route to save');
       return;
     }
-  
+
     try {
       setIsSaving(true);
-  
+
       // Get token from localStorage
-      const token = localStorage.getItem('token'); // 🔥 Add this line to retrieve the token
-  
-      // Debug logging
-      console.log('Route Data:', routeData);
-  
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Token not found in localStorage');
+        setSaveStatus('Error: User not authenticated');
+        navigate('/login');
+        return;
+      }
+
+      console.log('Token being sent:', token);
+      console.log('Route data being sent:', routeData);
+
       if (!routeData.legs || !routeData.legs[0]) {
         setSaveStatus('Invalid route data - no route legs found');
         return;
       }
-  
+
       const startPoint = routeData.legs[0].steps[0];
       const endPoint = routeData.legs[0].steps[routeData.legs[0].steps.length - 1];
-  
+
       const newRoute = {
         name: `${startPoint.name || 'Start'} to ${endPoint.name || 'End'}`,
         start_location: startPoint.name || 'Start',
@@ -115,50 +67,46 @@ function Map() {
           place_name: startPoint.name || 'Start',
           geometry: {
             type: 'Point',
-            coordinates: [
-              startPoint.maneuver.location[0],
-              startPoint.maneuver.location[1],
-            ],
+            coordinates: startPoint.maneuver.location,
           },
         },
         destination: {
           place_name: endPoint.name || 'End',
           geometry: {
             type: 'Point',
-            coordinates: [
-              endPoint.maneuver.location[0],
-              endPoint.maneuver.location[1],
-            ],
+            coordinates: endPoint.maneuver.location,
           },
         },
       };
-  
-      // Make the API request
+
       const response = await fetch(`${API_URL}/routes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, // 🔥 Add the token to the Authorization header
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(newRoute),
       });
-  
-      // Log response status for debugging
+
       console.log('Response status:', response.status);
-  
+
+      if (response.status === 401) {
+        console.warn('Token expired or user is not authenticated');
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.error || errorData.message || 'Failed to save route',
-        );
+        console.error('Error response:', errorData);
+        throw new Error(errorData.error || errorData.message || 'Failed to save route');
       }
-  
+
       const savedRoute = await response.json();
       console.log('Route saved successfully:', savedRoute);
-  
       setSaveStatus('Route saved successfully!');
-  
-      // Clear success message after 3 seconds
+
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (error) {
       console.error('Error saving route:', error);
@@ -166,80 +114,6 @@ function Map() {
     } finally {
       setIsSaving(false);
     }
-  };
-  
-
-  const loadSavedRoute = async route => {
-    try {
-      setIsLoadingSavedRoute(true);
-
-      if (directionsRef.current) {
-        // Set origin and destination using the coordinates from the saved route
-        directionsRef.current.setOrigin(route.origin.geometry.coordinates);
-        directionsRef.current.setDestination(
-          route.destination.geometry.coordinates,
-        );
-
-        // Fit the map to show the full route
-        if (mapInstanceRef.current && route.geometry) {
-          const bounds = new mapboxgl.LngLatBounds();
-
-          // Add origin and destination to bounds
-          bounds.extend(route.origin.geometry.coordinates);
-          bounds.extend(route.destination.geometry.coordinates);
-
-          // Add all step locations to bounds
-          if (route.steps) {
-            route.steps.forEach(step => {
-              if (step.maneuver && step.maneuver.location) {
-                bounds.extend(step.maneuver.location);
-              }
-            });
-          }
-
-          mapInstanceRef.current.fitBounds(bounds, {
-            padding: 100,
-            duration: 1000,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error loading saved route:', error);
-      setMapError('Error loading saved route');
-    } finally {
-      setIsLoadingSavedRoute(false);
-    }
-  };
-
-  // Function to add pins to the map
-  const loadMarkers = (map, pins) => {
-    const markers = [];
-
-    pins.forEach(location => {
-      // TODO: customize pins based on type of incident
-      // const el = document.createElement('div');
-      // el.className = 'marker';
-      // el.style.backgroundColor = '#5D7BD6';
-      // el.style.width = '16px';
-      // el.style.height = '16px';
-      // el.style.borderRadius = '50%';
-      // el.style.cursor = 'pointer';
-
-      // el.addEventListener('click', () => {
-      //   alert(`Clicked on: ${location.title}`);
-      // });
-
-      // const marker = new mapboxgl.Marker(el)
-      // ...
-      const marker = new mapboxgl.Marker()
-        .setLngLat(location.coordinates)
-        .setPopup(new mapboxgl.Popup({ offset: 25 }).setText(location.title))
-        .addTo(map);
-
-      markers.push({ marker, minZoom: location.minZoom });
-    });
-
-    return markers;
   };
 
   useEffect(() => {
@@ -251,15 +125,12 @@ function Map() {
     try {
       mapInstanceRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
-        style: 'mapbox://styles/en1135/cm2rtczub00dm01qi9phsddid', // style URL
+        style: 'mapbox://styles/en1135/cm2rtczub00dm01qi9phsddid',
         center: [-73.9967, 40.7312],
         zoom: 13.5,
       });
 
-      mapInstanceRef.current.addControl(
-        new mapboxgl.NavigationControl(),
-        'bottom-right',
-      );
+      mapInstanceRef.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 
       directionsRef.current = new MapboxDirections({
         accessToken: MAPBOX_ACCESS_TOKEN,
@@ -276,7 +147,6 @@ function Map() {
 
       mapInstanceRef.current.addControl(directionsRef.current, 'top-left');
 
-      // Listen for route updates
       directionsRef.current.on('route', e => {
         if (e.route && e.route[0]) {
           setRouteData(e.route[0]);
@@ -290,29 +160,6 @@ function Map() {
         setMapError('Error loading map');
       });
 
-      // Load saved route if available
-      mapInstanceRef.current.on('load', () => {
-        const selectedRoute = localStorage.getItem('selectedRoute');
-        if (selectedRoute) {
-          const route = JSON.parse(selectedRoute);
-          loadSavedRoute(route);
-          localStorage.removeItem('selectedRoute');
-        }
-      });
-
-      const markers = loadMarkers(mapInstanceRef.current, mockData); // Add mock pins to the map
-
-      // TODO: display pins based on zoom level, so that they don't clutter the map as a user zooms out
-      // alternatively, we can add a toggle feature that hides pins when a user zooms out far enough
-
-      // mapInstanceRef.current.on('zoom', () => {
-      //   const zoom = mapInstanceRef.current.getZoom();
-      //   markers.forEach(({ marker, minZoom }) => {
-      //     if (zoom >= minZoom) {
-      //       marker.remove();
-      //     }
-      //   });
-      // });
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Error initializing map');
@@ -332,30 +179,20 @@ function Map() {
           <div className='p-4 text-center text-red-600'>
             <p className='text-xl font-bold'>Error</p>
             <p>{mapError}</p>
-            <p className='mt-2 text-sm'>
-              Please check your Mapbox configuration
-            </p>
+            <p className='mt-2 text-sm'>Please check your Mapbox configuration</p>
           </div>
         </div>
       ) : (
         <>
-          <div
-            id='map-container'
-            className='h-94 w-full'
-            ref={mapContainerRef}
-          />
+          <div id='map-container' className='h-94 w-full' ref={mapContainerRef} />
 
-          {/* Controls */}
-          {/* <div className='absolute top-4 right-12 bg-white p-4 rounded shadow-lg space-y-2'> */}
           <div className='absolute bottom-16 left-12 max-w-md space-y-2 rounded bg-white p-4 shadow-lg'>
             {routeData && (
               <button
                 onClick={saveRoute}
                 disabled={isSaving || isLoadingSavedRoute}
                 className={`w-full ${
-                  isSaving || isLoadingSavedRoute
-                    ? 'bg-gray-400'
-                    : 'bg-green-500 hover:bg-green-600'
+                  isSaving || isLoadingSavedRoute ? 'bg-gray-400' : 'bg-green-500 hover:bg-green-600'
                 } flex items-center justify-center gap-2 rounded px-4 py-2 text-white`}
               >
                 <FaSave />
@@ -363,13 +200,9 @@ function Map() {
               </button>
             )}
             {saveStatus && (
-              <div
-                className={`rounded p-2 text-center ${
-                  saveStatus.includes('Error')
-                    ? 'bg-red-100 text-red-600'
-                    : 'bg-green-100 text-green-600'
-                }`}
-              >
+              <div className={`rounded p-2 text-center ${
+                saveStatus.includes('Error') ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+              }`}>
                 {saveStatus}
               </div>
             )}
@@ -384,29 +217,6 @@ function Map() {
               Report Incident
             </button>
           </div>
-
-          {/* Route info */}
-
-          {/* {routeData && (
-            <div className='absolute bottom-16 left-12 bg-white p-4 rounded shadow-lg max-w-md'>
-              <h3 className='font-bold mb-2'>Route Information:</h3>
-              <p>Distance: {(routeData.distance / 1000).toFixed(2)} km</p>
-              <p>Duration: {Math.round(routeData.duration / 60)} minutes</p>
-              <p className="mb-2">Steps: {routeData.legs[0].steps.length}</p> */}
-
-          {/* Directions list */}
-          {/* <div className="mt-4 max-h-48 overflow-y-auto">
-                <h4 className="font-semibold mb-2">Turn-by-turn directions:</h4>
-                <ol className="list-decimal list-inside space-y-2">
-                  {routeData.legs[0].steps.map((step, index) => (
-                    <li key={index} className="text-sm text-gray-600">
-                      {step.maneuver.instruction}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          )} */}
         </>
       )}
     </div>

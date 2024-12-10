@@ -30,17 +30,32 @@ const Login = () => {
       });
 
       console.log('Login success:', response.data);
-      
-      // Assuming the response contains the user's username
-      if (response.data && response.data.username) {
-        localStorage.setItem('user', JSON.stringify({ username: response.data.username }));
-        console.log('User saved to localStorage:', response.data.username);  // Log the user data
+
+      // 🔥 Check if token exists in the response
+      const { token, username } = response.data;
+
+      if (!token) {
+        console.error('No token received from server'); // 🔥 Log for debugging
+        throw new Error('No token received from server');
       }
-      
+
+      // 🔥 Save the token and user info in localStorage
+      localStorage.setItem('token', token); 
+      localStorage.setItem('user', JSON.stringify({ username })); 
+
+      console.log('Token saved to localStorage:', localStorage.getItem('token')); // 🔥 Verify token is stored
+      console.log('User saved to localStorage:', localStorage.getItem('user')); // 🔥 Verify user is stored
+
       navigate('/map'); // Redirect on success
     } catch (error) {
       console.error('Login failed:', error);
-      setError('Invalid email or password'); // Set error message to display in case of failure
+      
+      // 🔥 Improved error handling
+      if (error.response && error.response.status === 401) {
+        setError('Invalid email or password');
+      } else {
+        setError('Something went wrong. Please try again later.');
+      }
     }
   };
 
