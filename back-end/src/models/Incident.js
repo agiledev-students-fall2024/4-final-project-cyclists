@@ -4,7 +4,7 @@ const IncidentSchema = new mongoose.Schema(
   {
     image: {
       type: String,
-      required: true,
+      required: false, 
     },
     caption: {
       type: String,
@@ -20,6 +20,14 @@ const IncidentSchema = new mongoose.Schema(
         type: [Number], // [longitude, latitude]
         required: true,
       },
+    },
+    duration: {  
+      type: Number,
+      required: true,
+    },
+    timestamp: { 
+      type: Number,
+      required: true,
     },
     date: {
       type: Date,

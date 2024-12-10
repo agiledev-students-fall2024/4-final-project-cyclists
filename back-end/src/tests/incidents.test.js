@@ -1,35 +1,74 @@
-import request from 'supertest';
-import { expect } from 'chai';
-import app from '../app.js';
 import mongoose from 'mongoose';
+import chai from 'chai';
+import chaiHttp from 'chai-http';
+import sinon from 'sinon';
+import app from '../app.js';
+import Incident from '../models/Incident.js';
 
-describe('Incident Controller', () => {
-    before(async () => {
-        await mongoose.connect('mongodb://localhost:27017/testDB', { useNewUrlParser: true, useUnifiedTopology: true });
+chai.use(chaiHttp);
+const { expect } = chai;
+
+describe('Incidents API Tests', () => {
+  before(async () => {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+  });
+
+  after(async () => {
+    await Incident.deleteMany({});
+    await mongoose.disconnect();
+  });
+
+  beforeEach(async () => {
+    await Incident.deleteMany({});
+  });
+
+  describe('POST /api/incidents', () => {
+    it('should create a new incident', async () => {
+      const incidentData = {
+        caption: 'Test Incident',
+        longitude: -73.957375,
+        latitude: 40.718175,
+        duration: 900000,
+        timestamp: Date.now(),
+      };
+
+      const res = await chai.request(app).post('/api/incidents').send(incidentData);
+
+      expect(res).to.have.status(201);
+      expect(res.body).to.have.property('message', 'Incident reported successfully');
+      expect(res.body).to.have.property('incident');
+      expect(res.body.incident).to.have.property('caption', 'Test Incident');
     });
 
-    after(async () => {
-        await mongoose.connection.db.dropDatabase(); // Clear test database
-        await mongoose.connection.close();
+    it('should return 400 if required fields are missing', async () => {
+      const res = await chai.request(app).post('/api/incidents').send({ caption: 'Incomplete' });
+
+      expect(res).to.have.status(400);
+      expect(res.body).to.have.property('error', 'All fields are required with valid data.');
+    });
+  });
+
+  describe('Error Handling Middleware', () => {
+    let consoleErrorStub;
+
+    before(() => {
+      consoleErrorStub = sinon.stub(console, 'error');
     });
 
-    it('should report a new incident successfully', async () => {
-        const res = await request(app).post('/api/incidents').send({
-            image: 'test_image.png',
-            caption: 'Test Caption',
-            longitude: -122.084,
-            latitude: 37.422,
-            date: '2024-01-01T00:00:00Z',
-        });
-        expect(res.status).to.equal(201);
-        expect(res.body.message).to.equal('Incident reported successfully');
+    after(() => {
+      consoleErrorStub.restore();
     });
 
-    it('should return an error if any field is missing', async () => {
-        const res = await request(app).post('/api/incidents').send({
-            caption: 'Test Caption',
-        });
-        expect(res.status).to.equal(400);
-        expect(res.body.error).to.equal('All fields are required with valid data.');
+    it('should log errors and return a 404 for unknown routes', async () => {
+      const res = await chai.request(app).get('/unknown-route');
+
+      expect(consoleErrorStub.calledOnce).to.be.true; 
+      expect(consoleErrorStub.firstCall.args[0]).to.include('Error:'); 
+      expect(res).to.have.status(404);
+      expect(res.body).to.have.property('error', 'Not Found');
     });
+  });
 });
