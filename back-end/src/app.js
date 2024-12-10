@@ -6,26 +6,31 @@ import mongoose from 'mongoose';
 dotenv.config();
 
 export const connectToDatabase = async () => {
-    try {
-        await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-        console.log('Connected to MongoDB.');
-    } catch (err) {
-        console.error('Error connecting to MongoDB:', err);
-    }
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB.');
+  } catch (err) {
+    console.error('Error connecting to MongoDB:', err);
+  }
 };
 
-connectToDatabase();
+if (process.env.NODE_ENV !== 'test') {
+  connectToDatabase();
+}
 
 const app = express();
 
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
+  res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization'
+  );
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
 });
 
 app.use(morgan('dev'));
@@ -45,20 +50,19 @@ app.use('/api/routes', routeRoutes);
 app.use('/api/profiles', profileRoutes);
 
 app.get('/error-route', (req, res, next) => {
-    const error = new Error('Test error');
-    next(error);
+  const error = new Error('Test error');
+  next(error);
 });
 
 app.use((err, req, res, next) => {
   console.error('Error:', err.message || err);
   res.status(err.status || 500).json({
-      error: 'Internal Server Error', // Always return a consistent error message
+    error: 'Internal Server Error', // Always return a consistent error message
   });
 });
 
-
 app.get('/', (req, res) => {
-    res.send('Goodbye world!');
+  res.send('Goodbye World!');
 });
 
 export default app;
