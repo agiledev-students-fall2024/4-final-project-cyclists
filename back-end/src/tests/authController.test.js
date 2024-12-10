@@ -1,71 +1,184 @@
-import request from 'supertest';
-import { expect } from 'chai';
+import * as chai from 'chai';
+import { default as chaiHttp, request } from 'chai-http';
+import sinon from 'sinon';
+import bcrypt from 'bcrypt';
 import app from '../app.js';
-import mongoose from 'mongoose';
-import fs from 'fs';
-import path from 'path';
+import { User } from '../models/User.js';
 
-const dataDir = path.join(path.resolve(), 'src/data');
-const usersPath = path.join(dataDir, 'users.json');
+chai.use(chaiHttp);
+const { expect } = chai;
 
-describe('Auth Controller', function () {
-    this.timeout(10000); // Extend timeout to avoid timeout issues
+describe('===== Authentication Function Tests =====', () => {
+  let userStub, bcryptStub;
 
-    before(async () => {
-        await mongoose.connect(process.env.MONGODB_URI, { dbName: 'Cyclists' });
+  beforeEach(() => {
+    userStub = sinon.stub(User, 'findOne');
+    bcryptStub = sinon.stub(bcrypt, 'compare');
+  });
 
-        // Clear users.json before running tests
-        fs.writeFileSync(usersPath, JSON.stringify([], null, 2), 'utf8');
+  afterEach(() => {
+    userStub.restore();
+    bcryptStub.restore();
+  });
+
+  describe('Signup Function Tests', () => {
+    it('should return 400 if require fields are missing', async () => {
+      const res = await request.execute(app).post('/api/auth/signup').send({});
+
+      expect(res).to.have.status(400);
+      expect(res.body.error).to.equal(
+        'Username, email, and password are required'
+      );
     });
 
-    after(async () => {
-        await mongoose.connection.close();
+    it('should return 409 if the user already exists', async () => {
+      userStub.resolves({ email: 'test@example.com' });
+
+      const res = await request.execute(app).post('/api/auth/signup').send({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'password123',
+      });
+
+      expect(res).to.have.status(409);
+      expect(res.body.error).to.equal('User already exists');
     });
 
-    describe('POST /api/auth/signup', () => {
-        it('should sign up a new user successfully', async () => {
-            const res = await request(app).post('/api/auth/signup').send({
-                name: 'Test User',
-                email: 'testuser@example.com',
-                password: 'password123',
-            });
-            expect(res.status).to.equal(201);
-            expect(res.body.message).to.equal('User registered successfully');
-        });
+    it('should return 201 and a token on successful signup', async () => {
+      userStub.resolves(null);
 
-        it('should return an error if user already exists', async () => {
-            await request(app).post('/api/auth/signup').send({
-                name: 'Test User',
-                email: 'testuser@example.com',
-                password: 'password123',
-            });
-            const res = await request(app).post('/api/auth/signup').send({
-                name: 'Test User',
-                email: 'testuser@example.com',
-                password: 'password123',
-            });
-            expect(res.status).to.equal(409);
-            expect(res.body.message).to.equal('User already exists');
-        });
+      const saveStub = sinon.stub(User.prototype, 'save').resolves();
+
+      const res = await request.execute(app).post('/api/auth/signup').send({
+        username: 'testuser',
+        email: 'test@example.com',
+        password: 'password123',
+      });
+
+      expect(res).to.have.status(201);
+      expect(res.body.message).to.equal('User registered successfully');
+      expect(res.body).to.have.property('token');
+
+      saveStub.restore();
+    });
+  });
+
+  describe('Login Function Tests', () => {
+    it('should return 401 if user does not exist', async () => {
+      userStub.resolves(null); // Simulate user not found
+
+      const res = await request.execute(app).post('/api/auth/login').send({
+        email: 'nonexistent@example.com',
+        password: 'password123',
+      });
+
+      expect(res).to.have.status(401);
+      expect(res.body.error).to.equal('Invalid email credential');
     });
 
-    describe('POST /api/auth/login', () => {
-        it('should log in an existing user successfully', async () => {
-            const res = await request(app).post('/api/auth/login').send({
-                email: 'testuser@example.com',
-                password: 'password123',
-            });
-            expect(res.status).to.equal(200);
-            expect(res.body.message).to.equal('Login successful');
+    it('should return 401 if passwords do not match', async () => {
+      userStub.resolves({
+        email: 'test@example.com',
+        password: 'hashedpassword',
+      });
+      bcryptStub.resolves(false);
+
+      const res = await request.execute(app).post('/api/auth/login').send({
+        email: 'test@example.com',
+        password: 'wrongpassword',
+      });
+
+      expect(res).to.have.status(401);
+      expect(res.body.error).to.equal('Invalid password credential');
+    });
+
+    it('should return 200 and a token on successful login', async () => {
+      userStub.resolves({
+        _id: 'userId',
+        email: 'test@example.com',
+        password: 'hashedpassword',
+      });
+      bcryptStub.resolves(true);
+
+      const res = await request.execute(app).post('/api/auth/login').send({
+        email: 'test@example.com',
+        password: 'password123',
+      });
+
+      expect(res).to.have.status(200);
+      expect(res.body.message).to.equal('Login successful');
+      expect(res.body).to.have.property('token');
+    });
+  });
+
+  describe('Reset Password Function Tests', () => {
+    it('should return 404 if user is not found', async () => {
+      userStub.resolves(null);
+
+      const res = await request
+        .execute(app)
+        .post('/api/auth/reset-password')
+        .send({
+          email: 'nonexistent@example.com',
+          password: 'newpassword123',
         });
 
-        it('should return an error for invalid credentials', async () => {
-            const res = await request(app).post('/api/auth/login').send({
-                email: 'wronguser@example.com',
-                password: 'wrongpassword',
-            });
-            expect(res.status).to.equal(401);
-            expect(res.body.message).to.equal('Invalid credentials');
-        });
+      expect(res).to.have.status(404);
+      expect(res.body.error).to.equal('User not found');
     });
+
+    it('should return 200 and success message on successful password reset', async () => {
+      const user = {
+        _id: 'userId',
+        email: 'test@example.com',
+        password: 'oldpassword',
+        save: sinon.stub().resolves(),
+      };
+
+      userStub.resolves(user);
+
+      bcryptStub.resolves('hashedpassword123');
+
+      const res = await request
+        .execute(app)
+        .post('/api/auth/reset-password')
+        .send({
+          email: 'test@example.com',
+          password: 'newpassword123',
+        });
+
+      expect(res).to.have.status(200);
+      expect(res.body.message).to.equal('Password updated successfully');
+    });
+  });
+
+  describe('Forgot Password Function Tests', () => {
+    it('should return 404 if user is not found', async () => {
+      userStub.resolves(null);
+
+      const res = await request
+        .execute(app)
+        .post('/api/auth/forgot-password')
+        .send({
+          email: 'nonexistent@example.com',
+        });
+
+      expect(res).to.have.status(404);
+      expect(res.body.error).to.equal('User not found');
+    });
+
+    it('should return 200 if user is found', async () => {
+      userStub.resolves({ _id: 'userId', email: 'test@example.com' });
+
+      const res = await request
+        .execute(app)
+        .post('/api/auth/forgot-password')
+        .send({
+          email: 'test@example.com',
+        });
+
+      expect(res).to.have.status(200);
+      expect(res.body.message).to.equal('User found');
+    });
+  });
 });
