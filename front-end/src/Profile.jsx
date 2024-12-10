@@ -23,13 +23,17 @@ const Profile = () => {
     const fetchRoutes = async () => {
       setIsLoading(true);
       try {
-        // Retrieve token from local storage
         const token = localStorage.getItem('token');
     
-        // Make an authorized request
+        if (!token) {
+          console.warn('No token found! Redirecting to login.');
+          navigate('/login'); // Redirect if no token is found
+          return;
+        }
+    
         const response = await fetch(`${API_URL}/routes`, {
           headers: {
-            Authorization: `Bearer ${token}`, // Add the token to the Authorization header
+            Authorization: `Bearer ${token}`, // Send token in Authorization header
           },
         });
     
@@ -38,12 +42,11 @@ const Profile = () => {
         }
     
         const data = await response.json();
-        // Sort routes by date (newest first) and take only the latest 5
         const sortedRoutes = data
           .sort((a, b) => new Date(b.date) - new Date(a.date))
           .slice(0, 5);
     
-        setUserInfo((prevInfo) => ({ ...prevInfo, routes: sortedRoutes }));
+        setUserInfo(prevInfo => ({ ...prevInfo, routes: sortedRoutes }));
         setError(null);
       } catch (error) {
         console.error('Error fetching routes:', error);
@@ -52,6 +55,7 @@ const Profile = () => {
         setIsLoading(false);
       }
     };
+        
     fetchRoutes();
   }, []);
 

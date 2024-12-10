@@ -85,24 +85,24 @@ function Map() {
       setSaveStatus('No route to save');
       return;
     }
-
+  
     try {
       setIsSaving(true);
-
+  
+      // Get token from localStorage
+      const token = localStorage.getItem('token'); // 🔥 Add this line to retrieve the token
+  
       // Debug logging
       console.log('Route Data:', routeData);
-
+  
       if (!routeData.legs || !routeData.legs[0]) {
         setSaveStatus('Invalid route data - no route legs found');
         return;
       }
-
-      // Get the waypoints from the first leg; Not able to add from accessing geometry
+  
       const startPoint = routeData.legs[0].steps[0];
-      const endPoint =
-        routeData.legs[0].steps[routeData.legs[0].steps.length - 1];
-
-      // Create route object for storage with validated data
+      const endPoint = routeData.legs[0].steps[routeData.legs[0].steps.length - 1];
+  
       const newRoute = {
         name: `${startPoint.name || 'Start'} to ${endPoint.name || 'End'}`,
         start_location: startPoint.name || 'Start',
@@ -132,35 +132,32 @@ function Map() {
           },
         },
       };
-
-      // Debug logging
-      console.log('Attempting to save route:', newRoute);
-
+  
       // Make the API request
       const response = await fetch(`${API_URL}/routes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // 🔥 Add the token to the Authorization header
         },
         body: JSON.stringify(newRoute),
       });
-
+  
       // Log response status for debugging
       console.log('Response status:', response.status);
-
-      // Handle non-ok responses
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
           errorData.error || errorData.message || 'Failed to save route',
         );
       }
-
+  
       const savedRoute = await response.json();
       console.log('Route saved successfully:', savedRoute);
-
+  
       setSaveStatus('Route saved successfully!');
-
+  
       // Clear success message after 3 seconds
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (error) {
@@ -170,6 +167,7 @@ function Map() {
       setIsSaving(false);
     }
   };
+  
 
   const loadSavedRoute = async route => {
     try {
