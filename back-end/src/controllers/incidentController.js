@@ -29,7 +29,7 @@ export const reportIncident = async (req, res) => {
     console.log('Received incident data:', req.body);
 
     const newIncident = new Incident({
-      image: req.body.image,
+      image: req.body.image || null, // Make image optional
       caption: req.body.caption,
       location: {
         type: 'Point',
@@ -38,6 +38,8 @@ export const reportIncident = async (req, res) => {
           parseFloat(req.body.latitude),
         ],
       },
+      duration: req.body.duration,
+      timestamp: req.body.timestamp,
       date: new Date(),
     });
 
