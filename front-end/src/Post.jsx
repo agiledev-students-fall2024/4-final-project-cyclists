@@ -8,6 +8,12 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { API_URL } from './config/api';
 
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+//time contrsaints
+const DURATION_OPTIONS = [
+  { value: 900000, label: '15 minutes' }, // 15 mins in milliseconds
+  { value: 1800000, label: '30 minutes' }, // 30 mins in milliseconds
+  { value: 7200000, label: '2 hours' }, // 2 hours in milliseconds
+];
 
 function Post() {
   const [image, setImage] = useState(null);
@@ -22,6 +28,9 @@ function Post() {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
+  const [selectedDuration, setSelectedDuration] = useState(
+    DURATION_OPTIONS[0].value,
+  );
 
   useEffect(() => {
     if (showMap && mapContainerRef.current) {
@@ -177,6 +186,7 @@ function Post() {
             console.log('Using current location:', { currentLng, currentLat });
             setLongitude(currentLng.toFixed(6));
             setLatitude(currentLat.toFixed(6));
+            setSelectedDuration(DURATION_OPTIONS[0].value);
           } catch (locError) {
             console.log('Could not get current location:', locError);
           }
@@ -233,10 +243,6 @@ function Post() {
 
   const handlePostClick = async () => {
     try {
-      if (!image) {
-        alert('Please add a photo');
-        return;
-      }
       if (!longitude || !latitude) {
         alert('Please set a location');
         return;
@@ -245,17 +251,20 @@ function Post() {
         alert('Please add a caption');
         return;
       }
+      if (!selectedDuration) {
+        alert('Please select a duration');
+        return;
+      }
+
       const incidentData = {
-        image: image,
         caption: caption,
-        longitude: longitude,
-        latitude: latitude,
+        longitude: parseFloat(longitude), 
+        latitude: parseFloat(latitude),
+        duration: selectedDuration,
+        timestamp: Date.now(),
       };
 
-      console.log('Sending incident data:', {
-        ...incidentData,
-        image: '[truncated]',
-      });
+      console.log('Sending incident data:', incidentData);
 
       const response = await fetch(`${API_URL}/incidents`, {
         method: 'POST',
@@ -271,20 +280,12 @@ function Post() {
       }
 
       const result = await response.json();
-      console.log('Incident saved:', {
-        ...result,
-        image: '[truncated]',
-      });
+      console.log('Incident saved:', result);
 
-      setImage(null);
       setCaption('');
       setLongitude('');
       setLatitude('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = null;
-      }
-
-      // Show success notification
+      setSelectedDuration(DURATION_OPTIONS[0].value);
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -427,6 +428,20 @@ function Post() {
           style={{ display: 'none' }}
           onChange={handleImageUpload}
         />
+      </div>
+      <div className='mb-4'>
+        <label className='mb-2 block text-gray-700'>Duration:</label>
+        <select
+          value={selectedDuration}
+          onChange={e => setSelectedDuration(Number(e.target.value))}
+          className='w-full rounded border border-gray-300 p-2'
+        >
+          {DURATION_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <textarea
