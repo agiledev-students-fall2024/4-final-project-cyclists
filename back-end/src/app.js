@@ -14,6 +14,8 @@ export const connectToDatabase = async () => {
     }
 };
 
+connectToDatabase();
+
 const app = express();
 
 app.use((req, res, next) => {
