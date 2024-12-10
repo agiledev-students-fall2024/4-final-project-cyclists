@@ -118,7 +118,7 @@ const Profile = () => {
           ) : userInfo.routes.length > 0 ? (
             userInfo.routes.map((route) => (
               <div
-                key={route.id}
+                key={route._id} // Changed from `route.id` to `route._id` since MongoDB uses `_id`
                 className='cursor-pointer rounded-lg bg-gray-50 p-4 hover:bg-gray-100 transition-colors border border-gray-100'
                 onClick={() => handleRouteClick(route)}
               >
