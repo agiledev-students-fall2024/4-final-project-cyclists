@@ -1,32 +1,31 @@
-import chai from 'chai';
-import chaiHttp from 'chai-http';
+import * as chai from 'chai';
+import { default as chaiHttp, request } from 'chai-http';
 import app from '../app.js';
 
-const { expect } = chai;
 chai.use(chaiHttp);
+const { expect } = chai;
 
-describe('User Profile API', () => {
-  it('should save profile data successfully', (done) => {
-    chai
-      .request(app)
+describe('===== User Controller Tests =====', () => {
+  it('should save profile data successfully', async () => {
+    const res = await request
+      .execute(app)
       .post('/api/users/12345/profile')
-      .send({ name: 'John Doe', email: 'johndoe@example.com' })
-      .end((err, res) => {
-        expect(res).to.have.status(200);
-        expect(res.body).to.have.property('message', 'Profile saved successfully');
-        done();
-      });
+      .send({ name: 'John Doe', email: 'johndoe@example.com' });
+
+    expect(res).to.have.status(200);
+    expect(res.body).to.have.property('message', 'Profile saved successfully');
   });
 
-  it('should return error for missing required fields', (done) => {
-    chai
-      .request(app)
+  it('should return error for missing required fields', async () => {
+    const res = await request
+      .execute(app)
       .post('/api/users/12345/profile')
-      .send({ name: 'John Doe' })
-      .end((err, res) => {
-        expect(res).to.have.status(400);
-        expect(res.body).to.have.property('message', 'Missing required fields: name or email');
-        done();
-      });
+      .send({ name: 'John Doe' });
+
+    expect(res).to.have.status(400);
+    expect(res.body).to.have.property(
+      'message',
+      'Missing required fields: name or email'
+    );
   });
 });
