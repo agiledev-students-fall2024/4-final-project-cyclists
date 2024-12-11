@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User.js';  // Ensure the correct model path
+import { User } from '../models/User.js';
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup function
 export const signup = async (req, res) => {
@@ -13,33 +15,31 @@ export const signup = async (req, res) => {
   }
 
   try {
-    // Check if the user already exists by email
-    const existingUser = await User.findOne({ email });
+    // Check if user exists by email or username
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { username }] 
+    });
+    
     if (existingUser) {
-      return res.status(409).json({ error: 'User already exists' });
+      const field = existingUser.email === email ? 'email' : 'username';
+      return res.status(409).json({ error: `User with this ${field} already exists` });
     }
 
-    // Create a new user with username, email, and hashed password
-    const newUser = new User({
-      username,
-      email,
-      password,
-    });
-
-    // Save the user to the database
+    // Create and save new user
+    const newUser = new User({ username, email, password });
     await newUser.save();
 
     // Generate JWT token
     const token = jwt.sign(
       { id: newUser._id, email: newUser.email },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '1h' }
     );
 
     res.status(201).json({ message: 'User registered successfully', token });
   } catch (err) {
-    console.error('Error resetting password:', err);
-    res.status(500).json({ error: 'An error occurred during password reset' });
+    console.error('Error during signup:', err);
+    res.status(500).json({ error: 'An error occurred during signup' });
   }
 };
 
@@ -64,7 +64,7 @@ export const login = async (req, res) => {
     // If passwords match, generate JWT token
     const token = jwt.sign(
       { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: '24h' }
     );
 
@@ -113,4 +113,11 @@ export const forgotPassword = async (req, res) => {
     console.error('Error verifying user:', err);
     res.status(500).json({ error: 'An error occurred while verifying user' });
   }
+};
+
+export default {
+  signup,
+  login,
+  resetPassword,
+  forgotPassword
 };

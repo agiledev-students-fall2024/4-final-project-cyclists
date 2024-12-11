@@ -11,7 +11,6 @@ import { API_URL } from './config/api';
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
-
 function Map() {
   const navigate = useNavigate();
   const mapContainerRef = useRef(null);
@@ -162,71 +161,71 @@ function Map() {
   };
 
   const fetchIncidents = async () => {
-  try {
-    const response = await fetch(`${API_URL}/incidents`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch incidents');
-    }
-    const data = await response.json();
-    
-    // Transform the data to match the marker format
-    const transformedData = data.map(incident => ({
-      id: incident._id,
-      coordinates: incident.location.coordinates,
-      title: incident.caption,
-      duration: incident.duration,
-      timestamp: incident.timestamp
-    }));
+    try {
+      const response = await fetch(`${API_URL}/incidents`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch incidents');
+      }
+      const data = await response.json();
 
-    setIncidents(transformedData);
-  } catch (error) {
-    console.error('Error fetching incidents:', error);
-  }
-};
+      // Transform the data to match the marker format
+      const transformedData = data.map(incident => ({
+        id: incident._id,
+        coordinates: incident.location.coordinates,
+        title: incident.caption,
+        duration: incident.duration,
+        timestamp: incident.timestamp,
+      }));
+
+      setIncidents(transformedData);
+    } catch (error) {
+      console.error('Error fetching incidents:', error);
+    }
+  };
 
   // Function to add pins to the map with duration handling
   const loadMarkers = (map, pins) => {
-  const markers = [];
+    const markers = [];
 
-  const filterAndUpdateMarkers = () => {
-    const currentTime = Date.now();
-    markers.forEach(({ marker, timestamp, duration }) => {
-      if (currentTime - timestamp > duration) {
-        marker.remove();
-      }
-    });
-  };
+    const filterAndUpdateMarkers = () => {
+      const currentTime = Date.now();
+      markers.forEach(({ marker, timestamp, duration }) => {
+        if (currentTime - timestamp > duration) {
+          marker.remove();
+        }
+      });
+    };
 
-  pins.forEach(incident => {
-    const currentTime = Date.now();
-    const markerAge = currentTime - incident.timestamp;
+    pins.forEach(incident => {
+      const currentTime = Date.now();
+      const markerAge = currentTime - incident.timestamp;
 
-    if (markerAge <= incident.duration) {
-      const marker = new mapboxgl.Marker()
-        .setLngLat(incident.coordinates)
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+      if (markerAge <= incident.duration) {
+        const marker = new mapboxgl.Marker()
+          .setLngLat(incident.coordinates)
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(`
             <div>
               <h3>${incident.title}</h3>
               <p>Reported: ${new Date(incident.timestamp).toLocaleTimeString()}</p>
               <p>Active for: ${incident.duration / 60000} minutes</p>
               <p>Expires in: ${Math.round((incident.duration - markerAge) / 60000)} minutes</p>
             </div>
-          `)
-        )
-        .addTo(map);
+          `),
+          )
+          .addTo(map);
 
-      markers.push({
-        marker,
-        timestamp: incident.timestamp,
-        duration: incident.duration
-      });
-    }
-  });
+        markers.push({
+          marker,
+          timestamp: incident.timestamp,
+          duration: incident.duration,
+        });
+      }
+    });
 
-  setInterval(filterAndUpdateMarkers, 60000);
-  return markers;
-};
+    setInterval(filterAndUpdateMarkers, 60000);
+    return markers;
+  };
 
   useEffect(() => {
     if (!MAPBOX_ACCESS_TOKEN) {
@@ -277,29 +276,29 @@ function Map() {
       });
 
       // Load saved route if available
-          mapInstanceRef.current.on('load', () => {
-      // Load saved route if exists
-      const selectedRoute = localStorage.getItem('selectedRoute');
-      if (selectedRoute) {
-        const route = JSON.parse(selectedRoute);
-        loadSavedRoute(route);
-        localStorage.removeItem('selectedRoute');
-      }
+      mapInstanceRef.current.on('load', () => {
+        // Load saved route if exists
+        const selectedRoute = localStorage.getItem('selectedRoute');
+        if (selectedRoute) {
+          const route = JSON.parse(selectedRoute);
+          loadSavedRoute(route);
+          localStorage.removeItem('selectedRoute');
+        }
 
-      // Initial fetch of incidents
-      fetchIncidents();
-      
-      // Set up periodic fetching (every minute)
-      const fetchInterval = setInterval(fetchIncidents, 60000);
+        // Initial fetch of incidents
+        fetchIncidents();
 
-      // Load markers with real incident data
-      const markers = loadMarkers(mapInstanceRef.current, incidents);
+        // Set up periodic fetching (every minute)
+        const fetchInterval = setInterval(fetchIncidents, 60000);
 
-      // Cleanup interval on unmount
-      return () => {
-        clearInterval(fetchInterval);
-      };
-    });
+        // Load markers with real incident data
+        const markers = loadMarkers(mapInstanceRef.current, incidents);
+
+        // Cleanup interval on unmount
+        return () => {
+          clearInterval(fetchInterval);
+        };
+      });
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Error initializing map');
@@ -313,10 +312,10 @@ function Map() {
   }, []);
 
   useEffect(() => {
-  if (mapInstanceRef.current) {
-    loadMarkers(mapInstanceRef.current, incidents);
-  }
-}, [incidents]);
+    if (mapInstanceRef.current) {
+      loadMarkers(mapInstanceRef.current, incidents);
+    }
+  }, [incidents]);
 
   return (
     <div className='relative h-screen'>

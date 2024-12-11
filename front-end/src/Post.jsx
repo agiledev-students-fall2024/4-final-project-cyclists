@@ -258,7 +258,7 @@ function Post() {
 
       const incidentData = {
         caption: caption,
-        longitude: parseFloat(longitude), 
+        longitude: parseFloat(longitude),
         latitude: parseFloat(latitude),
         duration: selectedDuration,
         timestamp: Date.now(),
