@@ -5,7 +5,7 @@ import app from '../app.js';
 chai.use(chaiHttp);
 const { expect } = chai;
 
-describe('===== Profile Function Tests =====', () => {
+describe('===== User Controller Tests =====', () => {
   it('should save profile data successfully', async () => {
     const res = await request
       .execute(app)

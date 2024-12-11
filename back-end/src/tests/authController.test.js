@@ -8,7 +8,7 @@ import { User } from '../models/User.js';
 chai.use(chaiHttp);
 const { expect } = chai;
 
-describe('===== Authentication Function Tests =====', () => {
+describe('===== Authentication Tests =====', () => {
   let userStub, bcryptStub;
 
   beforeEach(() => {
@@ -21,7 +21,7 @@ describe('===== Authentication Function Tests =====', () => {
     bcryptStub.restore();
   });
 
-  describe('Signup Function Tests', () => {
+  describe('Signup Tests', () => {
     it('should return 400 if require fields are missing', async () => {
       const res = await request.execute(app).post('/api/auth/signup').send({});
 
@@ -63,7 +63,7 @@ describe('===== Authentication Function Tests =====', () => {
     });
   });
 
-  describe('Login Function Tests', () => {
+  describe('Login Tests', () => {
     it('should return 401 if user does not exist', async () => {
       userStub.resolves(null); // Simulate user not found
 
@@ -111,7 +111,7 @@ describe('===== Authentication Function Tests =====', () => {
     });
   });
 
-  describe('Reset Password Function Tests', () => {
+  describe('Reset Password Tests', () => {
     it('should return 404 if user is not found', async () => {
       userStub.resolves(null);
 
@@ -152,7 +152,7 @@ describe('===== Authentication Function Tests =====', () => {
     });
   });
 
-  describe('Forgot Password Function Tests', () => {
+  describe('Forgot Password Tests', () => {
     it('should return 404 if user is not found', async () => {
       userStub.resolves(null);
 
