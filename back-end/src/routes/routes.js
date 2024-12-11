@@ -12,7 +12,9 @@ const router = express.Router();
 router.get('/', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id; // Extract the user ID from the JWT token
-    const routes = await Route.find({ user: userId }).sort({ date: -1 }); // ✅ Use `user` instead of `userId`
+    const routes = await Route.find({ user: userId })
+      .sort({ date: -1 })
+      .populate('user', 'username email'); // Populate user details if needed
     res.status(200).json(routes);
   } catch (error) {
     console.error('Error getting routes:', error);
@@ -28,12 +30,12 @@ router.get('/', verifyToken, async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id; // Extract the user ID from the JWT token
-    const username = req.user.username; // ✅ Extract the username from the JWT token
+    const username = req.user.username; // Extract the username from the JWT token
     console.log('Received route data:', req.body);
 
     const fields = {
-      user: userId, // ✅ Attach the user ID as an ObjectId
-      username, // ✅ Attach the username from the JWT token
+      user: userId, // Attach the user ID as an ObjectId
+      username, // Attach the username from the JWT token
       name: req.body.name,
       start_location: req.body.start_location,
       end_location: req.body.end_location,
@@ -46,7 +48,8 @@ router.post('/', verifyToken, async (req, res) => {
     };
 
     // Check if any of the required fields are missing
-    if (Object.values(fields).some(value => value === undefined || value === null)) {
+    if (Object.values(fields).some(value => value == null)) {
+      console.warn('Missing required fields for route:', fields);
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -72,16 +75,14 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
     console.log('Attempting to delete route:', routeId);
 
-    // Find the route and check if it belongs to the current user
-    const route = await Route.findOne({ _id: routeId, user: userId }); // ✅ Use `user` instead of `userId`
+    const route = await Route.findOne({ _id: routeId, user: userId });
 
     if (!route) {
-      console.log('Route not found or does not belong to user:', routeId);
+      console.warn('Route not found or does not belong to user:', routeId);
       return res.status(404).json({ error: 'Route not found or does not belong to you' });
     }
 
     await Route.findByIdAndDelete(routeId);
-
     console.log('Route deleted successfully:', routeId);
     res.json({ message: 'Route deleted successfully' });
   } catch (error) {
@@ -100,7 +101,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     const userId = req.user.id; // Extract the user ID from the JWT token
     const routeId = req.params.id;
 
-    const route = await Route.findOne({ _id: routeId, user: userId }); // ✅ Use `user` instead of `userId`
+    const route = await Route.findOne({ _id: routeId, user: userId });
 
     if (!route) {
       return res.status(404).json({ error: 'Route not found or does not belong to you' });

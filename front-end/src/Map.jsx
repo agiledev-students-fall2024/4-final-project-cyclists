@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions';
@@ -12,6 +12,8 @@ const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
 function Map() {
+  const location = useLocation();
+  const selectedRoute = location.state?.route;
   const navigate = useNavigate();
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -171,6 +173,13 @@ function Map() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (selectedRoute && directionsRef.current) {
+      directionsRef.current.setOrigin(selectedRoute.origin.geometry.coordinates);
+      directionsRef.current.setDestination(selectedRoute.destination.geometry.coordinates);
+    }
+  }, [selectedRoute]);
 
   return (
     <div className='relative h-screen'>

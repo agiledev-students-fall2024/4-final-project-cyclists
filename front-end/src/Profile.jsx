@@ -60,9 +60,9 @@ const Profile = () => {
   }, []);
 
   const handleRouteClick = (route) => {
-    localStorage.setItem('selectedRoute', JSON.stringify(route));
-    navigate('/map');
+    navigate('/map', { state: { route } });
   };
+  
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
