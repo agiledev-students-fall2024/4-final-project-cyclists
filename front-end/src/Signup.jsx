@@ -86,6 +86,7 @@ const Signup = () => {
               className='mt-1 block w-full rounded-md border border-gray-300 p-2'
               required
             />
+            <p className='mt-1 text-sm text-red-500'>Password must be at least 6 characters long.</p>
           </div>
           <button type='submit' className='rounded-md bg-emerald-800 px-4 py-2 text-white'>
             Sign Up
