@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, ChevronRight, MapPin, Clock, Route } from 'lucide-react';
+import { User, MapPin, Clock, Route } from 'lucide-react';
 import { FaAngleDoubleRight } from 'react-icons/fa';
 import { API_URL } from './config/api';
 
@@ -24,7 +24,6 @@ const Profile = () => {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('token');
-    
         if (!token) {
           console.warn('No token found! Redirecting to login.');
           navigate('/login'); // Redirect if no token is found
@@ -59,8 +58,26 @@ const Profile = () => {
     fetchRoutes();
   }, []);
 
-  const handleRouteClick = (route) => {
-    navigate('/map', { state: { route } });
+  const handleRouteClick = async (routeId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/routes/${routeId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch route details');
+      }
+
+      const fullRoute = await response.json();
+      localStorage.setItem('selectedRoute', JSON.stringify(fullRoute)); // Store selected route details
+      navigate('/map');
+    } catch (error) {
+      console.error('Error loading route details:', error);
+      setError('Failed to load route details.');
+    }
   };
   
 
@@ -124,7 +141,7 @@ const Profile = () => {
               <div
                 key={route._id} // Changed from `route.id` to `route._id` since MongoDB uses `_id`
                 className='cursor-pointer rounded-lg bg-gray-50 p-4 hover:bg-gray-100 transition-colors border border-gray-100'
-                onClick={() => handleRouteClick(route)}
+                onClick={() => handleRouteClick(route._id)}
               >
                 <div className="flex justify-between items-start">
                   <div>
