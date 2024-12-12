@@ -90,7 +90,9 @@ const Profile = () => {
             <h2 className='text-lg font-medium'>{userInfo.username}</h2>
             {userInfo.name && <p className='text-gray-600'>{userInfo.name}</p>}
             {userInfo.biography && <p className='text-gray-600 mt-2'>{userInfo.biography}</p>}
-            {userInfo.gender && userInfo.gender !== 'Select gender' &&
+            {userInfo.gender && userInfo.gender !== 'Select gender' && (
+              <p className='text-gray-600 mt-1'>{userInfo.gender}</p>
+            )}
             <div className="mt-2 flex space-x-3">
               <button
                 onClick={() => navigate('/edit-profile')}
