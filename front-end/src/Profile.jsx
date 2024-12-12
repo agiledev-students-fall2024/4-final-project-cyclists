@@ -34,7 +34,8 @@ const Profile = () => {
           const profileData = await profileResponse.json();
           setUserInfo(prev => ({
             ...prev,
-            ...profileData
+            ...profileData,
+            username: profileData.username || localStorage.getItem('username')
           }));
         }
 
