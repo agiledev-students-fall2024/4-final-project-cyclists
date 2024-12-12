@@ -21,6 +21,25 @@ const Signup = () => {
     try {
       const response = await axios.post(`${API_URL}/auth/signup`, formData);
       console.log('Signup success:', response.data);
+
+      // Check if token exists in the response
+      const { token, username } = response.data;
+
+      if (!token) {
+        console.error('No token received from server'); // Log for debugging
+        throw new Error('No token received from server');
+      }
+
+      // Save the token and user info in localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify({ username }));
+
+      console.log(
+        'Token saved to localStorage:',
+        localStorage.getItem('token'),
+      ); // 🔥 Verify token is stored
+      console.log('User saved to localStorage:', localStorage.getItem('user')); // 🔥 Verify user is stored
+
       navigate('/map'); // Redirect on success
     } catch (error) {
       console.error('Signup failed:', error);
