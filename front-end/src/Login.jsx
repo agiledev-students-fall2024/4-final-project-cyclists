@@ -29,22 +29,32 @@ const Login = () => {
       });
 
       console.log('Login success:', response.data);
-      
-      // Store both token and user data
-      if (response.data) {
-        localStorage.setItem('token', response.data.token);
-        localStorage.setItem('userId', response.data.id); // Store user ID
-        localStorage.setItem('user', JSON.stringify({ 
-          username: response.data.username,
-          id: response.data.id 
-        }));
-        console.log('User data saved to localStorage');
+
+      // 🔥 Check if token exists in the response
+      const { token, username } = response.data;
+
+      if (!token) {
+        console.error('No token received from server'); // 🔥 Log for debugging
+        throw new Error('No token received from server');
       }
-      
-      navigate('/map');
+
+      // 🔥 Save the token and user info in localStorage
+      localStorage.setItem('token', token); 
+      localStorage.setItem('user', JSON.stringify({ username })); 
+
+      console.log('Token saved to localStorage:', localStorage.getItem('token')); // 🔥 Verify token is stored
+      console.log('User saved to localStorage:', localStorage.getItem('user')); // 🔥 Verify user is stored
+
+      navigate('/map'); // Redirect on success
     } catch (error) {
       console.error('Login failed:', error);
-      setError('Invalid email or password');
+      
+      // 🔥 Improved error handling
+      if (error.response && error.response.status === 401) {
+        setError('Invalid email or password');
+      } else {
+        setError('Something went wrong. Please try again later.');
+      }
     }
   };
 

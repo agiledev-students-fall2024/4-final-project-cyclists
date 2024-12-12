@@ -63,10 +63,28 @@ const Profile = () => {
     fetchUserData();
   }, []);
 
-  const handleRouteClick = (route) => {
-    localStorage.setItem('selectedRoute', JSON.stringify(route));
-    navigate('/map');
+  const handleRouteClick = async (routeId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/routes/${routeId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch route details');
+      }
+
+      const fullRoute = await response.json();
+      localStorage.setItem('selectedRoute', JSON.stringify(fullRoute)); // Store selected route details
+      navigate('/map');
+    } catch (error) {
+      console.error('Error loading route details:', error);
+      setError('Failed to load route details.');
+    }
   };
+  
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -135,9 +153,9 @@ const Profile = () => {
           ) : userInfo.routes.length > 0 ? (
             userInfo.routes.map((route) => (
               <div
-                key={route.id}
+                key={route._id} // Changed from `route.id` to `route._id` since MongoDB uses `_id`
                 className='cursor-pointer rounded-lg bg-gray-50 p-4 hover:bg-gray-100 transition-colors border border-gray-100'
-                onClick={() => handleRouteClick(route)}
+                onClick={() => handleRouteClick(route._id)}
               >
                 <div className="flex justify-between items-start">
                   <div>

@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User.js';  // Ensure the correct model path
+import { User } from '../models/User.js'; // Ensure the correct model path
 
 // Signup function
 export const signup = async (req, res) => {
@@ -13,10 +13,13 @@ export const signup = async (req, res) => {
   }
 
   try {
-    // Check if the user already exists by email
-    const existingUser = await User.findOne({ email });
+    // Check if the user already exists by email or username
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(409).json({ error: 'User already exists' });
+      console.log('User already exists:', email);
+      return res
+        .status(409)
+        .json({ error: 'User with this email or username already exists' });
     }
 
     // Create a new user with username, email, and hashed password
@@ -29,14 +32,20 @@ export const signup = async (req, res) => {
     // Save the user to the database
     await newUser.save();
 
-    // Generate JWT token
+    // Generate JWT token with user id, username, and email
     const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
+      { id: newUser._id, username: newUser.username, email: newUser.email },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '7d' }
     );
 
-    res.status(201).json({ message: 'User registered successfully', token });
+    res
+      .status(201)
+      .json({
+        message: 'User registered successfully',
+        token,
+        username: newUser.username,
+      });
   } catch (err) {
     console.error('Error resetting password:', err);
     res.status(500).json({ error: 'An error occurred during password reset' });
@@ -48,24 +57,22 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('Invalid email:', email);
       return res.status(401).json({ error: 'Invalid email credential' });
     }
 
-    // Use bcrypt.compare with async/await to compare the passwords
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid password credential' });
     }
 
-    // If passwords match, generate JWT token
+    // Generate JWT token with user id, username, and email
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, username: user.username, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     // Send back user ID along with other data
@@ -84,6 +91,10 @@ export const login = async (req, res) => {
 // Reset Password function
 export const resetPassword = async (req, res) => {
   const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
 
   try {
     const user = await User.findOne({ email });
@@ -105,6 +116,10 @@ export const resetPassword = async (req, res) => {
 // Forgot Password function
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
 
   try {
     const user = await User.findOne({ email });

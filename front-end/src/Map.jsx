@@ -11,7 +11,6 @@ import { API_URL } from './config/api';
 const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
-
 function Map() {
   const navigate = useNavigate();
   const mapContainerRef = useRef(null);
@@ -37,8 +36,17 @@ function Map() {
     try {
       setIsSaving(true);
 
-      // Debug logging
-      console.log('Route Data:', routeData);
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Token not found in localStorage');
+        setSaveStatus('Error: User not authenticated');
+        navigate('/login');
+        return;
+      }
+
+      console.log('Token being sent:', token);
+      console.log('Route data being sent:', routeData);
 
       if (!routeData.legs || !routeData.legs[0]) {
         setSaveStatus('Invalid route data - no route legs found');
@@ -50,7 +58,6 @@ function Map() {
       const endPoint =
         routeData.legs[0].steps[routeData.legs[0].steps.length - 1];
 
-      // Create route object for storage with validated data
       const newRoute = {
         name: `${startPoint.name || 'Start'} to ${endPoint.name || 'End'}`,
         start_location: startPoint.name || 'Start',
@@ -81,25 +88,27 @@ function Map() {
         },
       };
 
-      // Debug logging
-      console.log('Attempting to save route:', newRoute);
-
-      // Make the API request
       const response = await fetch(`${API_URL}/routes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(newRoute),
       });
 
-      // Log response status for debugging
       console.log('Response status:', response.status);
 
-      // Handle non-ok responses
+      if (response.status === 401) {
+        console.warn('Token expired or user is not authenticated');
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Error response:', errorData);
         throw new Error(
           errorData.error || errorData.message || 'Failed to save route',
         );
@@ -107,10 +116,8 @@ function Map() {
 
       const savedRoute = await response.json();
       console.log('Route saved successfully:', savedRoute);
-
       setSaveStatus('Route saved successfully!');
 
-      // Clear success message after 3 seconds
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (error) {
       console.error('Error saving route:', error);
@@ -163,71 +170,71 @@ function Map() {
   };
 
   const fetchIncidents = async () => {
-  try {
-    const response = await fetch(`${API_URL}/incidents`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch incidents');
-    }
-    const data = await response.json();
-    
-    // Transform the data to match the marker format
-    const transformedData = data.map(incident => ({
-      id: incident._id,
-      coordinates: incident.location.coordinates,
-      title: incident.caption,
-      duration: incident.duration,
-      timestamp: incident.timestamp
-    }));
+    try {
+      const response = await fetch(`${API_URL}/incidents`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch incidents');
+      }
+      const data = await response.json();
 
-    setIncidents(transformedData);
-  } catch (error) {
-    console.error('Error fetching incidents:', error);
-  }
-};
+      // Transform the data to match the marker format
+      const transformedData = data.map(incident => ({
+        id: incident._id,
+        coordinates: incident.location.coordinates,
+        title: incident.caption,
+        duration: incident.duration,
+        timestamp: incident.timestamp,
+      }));
+
+      setIncidents(transformedData);
+    } catch (error) {
+      console.error('Error fetching incidents:', error);
+    }
+  };
 
   // Function to add pins to the map with duration handling
   const loadMarkers = (map, pins) => {
-  const markers = [];
+    const markers = [];
 
-  const filterAndUpdateMarkers = () => {
-    const currentTime = Date.now();
-    markers.forEach(({ marker, timestamp, duration }) => {
-      if (currentTime - timestamp > duration) {
-        marker.remove();
-      }
-    });
-  };
+    const filterAndUpdateMarkers = () => {
+      const currentTime = Date.now();
+      markers.forEach(({ marker, timestamp, duration }) => {
+        if (currentTime - timestamp > duration) {
+          marker.remove();
+        }
+      });
+    };
 
-  pins.forEach(incident => {
-    const currentTime = Date.now();
-    const markerAge = currentTime - incident.timestamp;
+    pins.forEach(incident => {
+      const currentTime = Date.now();
+      const markerAge = currentTime - incident.timestamp;
 
-    if (markerAge <= incident.duration) {
-      const marker = new mapboxgl.Marker()
-        .setLngLat(incident.coordinates)
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+      if (markerAge <= incident.duration) {
+        const marker = new mapboxgl.Marker()
+          .setLngLat(incident.coordinates)
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(`
             <div>
               <h3>${incident.title}</h3>
               <p>Reported: ${new Date(incident.timestamp).toLocaleTimeString()}</p>
               <p>Active for: ${incident.duration / 60000} minutes</p>
               <p>Expires in: ${Math.round((incident.duration - markerAge) / 60000)} minutes</p>
             </div>
-          `)
-        )
-        .addTo(map);
+          `),
+          )
+          .addTo(map);
 
-      markers.push({
-        marker,
-        timestamp: incident.timestamp,
-        duration: incident.duration
-      });
-    }
-  });
+        markers.push({
+          marker,
+          timestamp: incident.timestamp,
+          duration: incident.duration,
+        });
+      }
+    });
 
-  setInterval(filterAndUpdateMarkers, 60000);
-  return markers;
-};
+    setInterval(filterAndUpdateMarkers, 60000);
+    return markers;
+  };
 
   useEffect(() => {
     if (!MAPBOX_ACCESS_TOKEN) {
@@ -238,7 +245,7 @@ function Map() {
     try {
       mapInstanceRef.current = new mapboxgl.Map({
         container: mapContainerRef.current,
-        style: 'mapbox://styles/en1135/cm2rtczub00dm01qi9phsddid', // style URL
+        style: 'mapbox://styles/en1135/cm2rtczub00dm01qi9phsddid',
         center: [-73.9967, 40.7312],
         zoom: 13.5,
       });
@@ -263,7 +270,6 @@ function Map() {
 
       mapInstanceRef.current.addControl(directionsRef.current, 'top-left');
 
-      // Listen for route updates
       directionsRef.current.on('route', e => {
         if (e.route && e.route[0]) {
           setRouteData(e.route[0]);
@@ -278,29 +284,29 @@ function Map() {
       });
 
       // Load saved route if available
-          mapInstanceRef.current.on('load', () => {
-      // Load saved route if exists
-      const selectedRoute = localStorage.getItem('selectedRoute');
-      if (selectedRoute) {
-        const route = JSON.parse(selectedRoute);
-        loadSavedRoute(route);
-        localStorage.removeItem('selectedRoute');
-      }
+      mapInstanceRef.current.on('load', () => {
+        // Load saved route if exists
+        const selectedRoute = localStorage.getItem('selectedRoute');
+        if (selectedRoute) {
+          const route = JSON.parse(selectedRoute);
+          loadSavedRoute(route);
+          localStorage.removeItem('selectedRoute');
+        }
 
-      // Initial fetch of incidents
-      fetchIncidents();
-      
-      // Set up periodic fetching (every minute)
-      const fetchInterval = setInterval(fetchIncidents, 60000);
+        // Initial fetch of incidents
+        fetchIncidents();
 
-      // Load markers with real incident data
-      const markers = loadMarkers(mapInstanceRef.current, incidents);
+        // Set up periodic fetching (every minute)
+        const fetchInterval = setInterval(fetchIncidents, 60000);
 
-      // Cleanup interval on unmount
-      return () => {
-        clearInterval(fetchInterval);
-      };
-    });
+        // Load markers with real incident data
+        const markers = loadMarkers(mapInstanceRef.current, incidents);
+
+        // Cleanup interval on unmount
+        return () => {
+          clearInterval(fetchInterval);
+        };
+      });
     } catch (error) {
       console.error('Error initializing map:', error);
       setMapError('Error initializing map');
@@ -314,10 +320,10 @@ function Map() {
   }, []);
 
   useEffect(() => {
-  if (mapInstanceRef.current) {
-    loadMarkers(mapInstanceRef.current, incidents);
-  }
-}, [incidents]);
+    if (mapInstanceRef.current) {
+      loadMarkers(mapInstanceRef.current, incidents);
+    }
+  }, [incidents]);
 
   return (
     <div className='relative h-screen'>
@@ -339,8 +345,6 @@ function Map() {
             ref={mapContainerRef}
           />
 
-          {/* Controls */}
-          {/* <div className='absolute top-4 right-12 bg-white p-4 rounded shadow-lg space-y-2'> */}
           <div className='absolute bottom-16 left-12 max-w-md space-y-2 rounded bg-white p-4 shadow-lg'>
             {routeData && (
               <button
