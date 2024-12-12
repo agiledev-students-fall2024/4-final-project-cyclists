@@ -1,58 +1,77 @@
-import chai from 'chai';
-import chaiHttp from 'chai-http';
-import mongoose from 'mongoose';
+import * as chai from 'chai';
+import { default as chaiHttp, request } from 'chai-http';
+import sinon from 'sinon';
 import app from '../app.js';
-import Profile from '../models/profile.js';
+import Profile from '../models/Profile.js';
 
-const { expect } = chai;
 chai.use(chaiHttp);
+const { expect } = chai;
 
-describe('Profile API Tests', () => {
-  before(async () => {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+describe('===== Profile Tests =====', () => {
+  let saveStub;
+
+  beforeEach(() => {
+    saveStub = sinon
+      .stub(Profile.prototype, 'save')
+      .resolves({ _id: '1', name: 'Test User', email: 'testuser@example.com' });
   });
 
-  after(async () => {
-    await mongoose.connection.close();
+  afterEach(() => {
+    saveStub.restore();
   });
 
-  beforeEach(async () => {
-    await Profile.deleteMany();
-  });
-
-  it('should create a new profile', (done) => {
-    const newProfile = { name: 'John Doe', email: 'john@example.com', bio: 'Software Engineer' };
-
-    chai
-      .request(app)
-      .post('/api/profiles')
-      .send(newProfile)
-      .end((err, res) => {
-        expect(res).to.have.status(201);
-        expect(res.body).to.have.property('_id');
-        expect(res.body).to.have.property('name', 'John Doe');
-        done();
+  describe('Create Profile Tests', () => {
+    it('should return 201 and the created profile on success', async () => {
+      const res = await request.execute(app).post('/api/profiles').send({
+        name: 'Test User',
+        email: 'testuser@example.com',
+        bio: 'This is a test bio.',
+        location: 'New York',
       });
-  });
 
-  it('should fetch all profiles', (done) => {
-    const profiles = [
-      { name: 'Alice', email: 'alice@example.com' },
-      { name: 'Bob', email: 'bob@example.com' },
-    ];
+      expect(res).to.have.status(201);
+      expect(res.body).to.have.property('_id');
+      expect(res.body.name).to.equal('Test User');
+      expect(res.body.email).to.equal('testuser@example.com');
+    });
 
-    Profile.insertMany(profiles).then(() => {
-      chai
-        .request(app)
-        .get('/api/profiles')
-        .end((err, res) => {
-          expect(res).to.have.status(200);
-          expect(res.body).to.be.an('array').that.has.lengthOf(2);
-          done();
-        });
+    it('should return 400 if validation fails (missing name)', async () => {
+      const res = await request.execute(app).post('/api/profiles').send({
+        email: 'testuser@example.com',
+        bio: 'This is a test bio.',
+        location: 'New York',
+      });
+
+      expect(res).to.have.status(400);
+      expect(res.body.errors).to.be.an('array');
+      expect(res.body.errors[0].msg).to.equal('Name is required');
+    });
+
+    it('should return 400 if validation fails (invalid email)', async () => {
+      const res = await request.execute(app).post('/api/profiles').send({
+        name: 'Test User',
+        email: 'invalid-email',
+        bio: 'This is a test bio.',
+        location: 'New York',
+      });
+
+      expect(res).to.have.status(400);
+      expect(res.body.errors).to.be.an('array');
+      expect(res.body.errors[0].msg).to.equal('Valid email is required');
+    });
+
+    it('should return 500 if there is a failure saving the profile', async () => {
+      saveStub.rejects(new Error('Failed to save profile'));
+
+      const res = await request.execute(app).post('/api/profiles').send({
+        name: 'Test User',
+        email: 'testuser@example.com',
+        bio: 'This is a test bio.',
+        location: 'New York',
+      });
+
+      expect(res).to.have.status(500);
+      expect(res.body.error).to.equal('Failed to create profile');
     });
   });
 });
