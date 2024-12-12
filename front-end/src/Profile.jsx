@@ -1,62 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, MapPin, Clock, Route } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ChevronRight, MapPin, Clock, Route } from 'lucide-react';
 import { FaAngleDoubleRight } from 'react-icons/fa';
 import { API_URL } from './config/api';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState({
-    username: 'unique_username',  // Default value if user is not found
-    routes: [],
+    username: '',
+    name: '',
+    biography: '',
+    gender: '',
+    routes: []
   });
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [routes, setRoutes] = useState([]);
 
   useEffect(() => {
-    // Fetch the current user's data from localStorage
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser && storedUser.username) {
-      setUserInfo(prevInfo => ({ ...prevInfo, username: storedUser.username }));
-    }
-
-    const fetchRoutes = async () => {
-      setIsLoading(true);
+    const fetchUserData = async () => {
       try {
+        setIsLoading(true);
         const token = localStorage.getItem('token');
-        if (!token) {
-          console.warn('No token found! Redirecting to login.');
-          navigate('/login'); // Redirect if no token is found
-          return;
-        }
-    
-        const response = await fetch(`${API_URL}/routes`, {
+        const userId = localStorage.getItem('userId');
+        
+        // Fetch profile data
+        const profileResponse = await fetch(`${API_URL}/users/${userId}/profile`, {
           headers: {
-            Authorization: `Bearer ${token}`, // Send token in Authorization header
-          },
+            'Authorization': `Bearer ${token}`
+          }
         });
-    
-        if (!response.ok) {
-          throw new Error('Failed to fetch routes');
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setUserInfo(prev => ({
+            ...prev,
+            ...profileData,
+            username: profileData.username || localStorage.getItem('username')
+          }));
         }
-    
-        const data = await response.json();
-        const sortedRoutes = data
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 5);
-    
-        setUserInfo(prevInfo => ({ ...prevInfo, routes: sortedRoutes }));
-        setError(null);
+
+        // Fetch routes
+        await fetchRoutes();
       } catch (error) {
-        console.error('Error fetching routes:', error);
-        setError('Failed to load routes');
+        console.error('Error fetching profile:', error);
       } finally {
         setIsLoading(false);
       }
     };
-        
-    fetchRoutes();
+
+    fetchUserData();
   }, []);
+
+  const fetchRoutes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/profile-routes`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch routes');
+      }
+
+      const data = await response.json();
+      setRoutes(data);
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+    }
+  };
 
   const handleRouteClick = async (routeId) => {
     try {
@@ -92,11 +106,20 @@ const Profile = () => {
     <div className='min-h-screen bg-white'>
       <div className='px-4 pt-16 max-w-4xl mx-auto'>
         <div className='mb-8 flex items-start space-x-4'>
-          <div className='flex h-24 w-24 items-center justify-center rounded-lg bg-gray-100'>
-            <User size={32} className='text-gray-400' />
+          <div className='flex h-24 w-24 items-center justify-center rounded-lg bg-gradient-to-br from-orange-300 via-pink-400 to-purple-500'>
+            <img 
+              src="/default-profile.png" 
+              alt="Profile"
+              className='h-16 w-16 object-contain'
+            />
           </div>
           <div className='flex-1'>
-            <h2 className='text-lg font-medium'>{userInfo.username}</h2>  {/* Username displayed here */}
+            <h2 className='text-lg font-medium'>{userInfo.username}</h2>
+            {userInfo.name && <p className='text-gray-600'>{userInfo.name}</p>}
+            {userInfo.biography && <p className='text-gray-600 mt-2'>{userInfo.biography}</p>}
+            {userInfo.gender && userInfo.gender !== 'Select gender' && (
+              <p className='text-gray-600 mt-1'>{userInfo.gender}</p>
+            )}
             <div className="mt-2 flex space-x-3">
               <button
                 onClick={() => navigate('/edit-profile')}
@@ -114,14 +137,30 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className='mb-4 flex items-center justify-between'>
-          <h3 className='text-lg font-medium'>Recent Routes</h3>
-          <div
-            className='flex cursor-pointer items-center text-emerald-800 hover:text-emerald-600'
-            onClick={() => navigate('/saved-routes')}
-          >
-            <span className='mr-1'>View All</span>
-            <FaAngleDoubleRight />
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Recent Routes</h2>
+            <Link to="/saved-routes" className="text-emerald-600 hover:text-emerald-700">
+              View All »
+            </Link>
+          </div>
+          <div className="space-y-4">
+            {routes.slice(0, 3).map((route) => (
+              <div
+                key={route._id}
+                className="bg-white shadow rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
+                <h3 className="font-medium">{route.name}</h3>
+                <div className="mt-2 text-sm text-gray-600">
+                  <div>From: {route.start_location}</div>
+                  <div>To: {route.end_location}</div>
+                  <div className="mt-1">
+                    Distance: {(route.distance / 1000).toFixed(2)} km • 
+                    Duration: {Math.round(route.duration / 60)} min
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -130,55 +169,6 @@ const Profile = () => {
             {error}
           </div>
         )}
-
-        <div className='mb-8 space-y-3'>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800"></div>
-            </div>
-          ) : userInfo.routes.length > 0 ? (
-            userInfo.routes.map((route) => (
-              <div
-                key={route._id} // Changed from `route.id` to `route._id` since MongoDB uses `_id`
-                className='cursor-pointer rounded-lg bg-gray-50 p-4 hover:bg-gray-100 transition-colors border border-gray-100'
-                onClick={() => handleRouteClick(route._id)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-gray-800">{route.name}</h4>
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <MapPin size={16} className="mr-2 text-emerald-600" />
-                        {route.start_location}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Route size={16} className="mr-2 text-emerald-700" />
-                        {(route.distance / 1000).toFixed(2)} km
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock size={16} className="mr-2 text-emerald-800" />
-                        {Math.round(route.duration / 60)} min
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {formatDate(route.date)}
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No routes saved yet</p>
-              <button
-                onClick={() => navigate('/map')}
-                className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors"
-              >
-                Create Your First Route
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

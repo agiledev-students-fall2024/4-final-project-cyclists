@@ -1,181 +1,182 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from './config/api';
 
-function EditProfile() {
+const EditProfile = () => {
   const navigate = useNavigate();
-
-  // Add predefined gender options
-  const genderOptions = [
-    'Select gender',
-    'Male',
-    'Female',
-    'Non-binary',
-    'Other',
-    'Prefer not to say',
-  ];
-
   const [formData, setFormData] = useState({
     name: '',
     username: '',
     biography: '',
-    gender: 'Select gender',
+    gender: 'Select gender'
   });
 
-  const [errors, setErrors] = useState({
-    name: '',
-    username: '',
-    biography: '',
-    gender: '',
-  });
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        
+        const response = await fetch(`${API_URL}/users/${userId}/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
 
-  const validateField = (name, value) => {
-    switch (name) {
-      case 'name':
-        if (!value.trim()) return 'Name is required';
-        if (value.length < 2) return 'Name must be at least 2 characters';
-        if (value.length > 50) return 'Name must be less than 50 characters';
-        return '';
-
-      case 'username':
-        if (!value.trim()) return 'Username is required';
-        if (value.length < 3) return 'Username must be at least 3 characters';
-        if (value.length > 20)
-          return 'Username must be less than 20 characters';
-        if (!/^[a-zA-Z0-9_]+$/.test(value))
-          return 'Username can only contain letters, numbers, and underscores';
-        return '';
-
-      case 'biography':
-        if (value.length > 200)
-          return 'Biography must be less than 200 characters';
-        return '';
-
-      case 'gender':
-        if (value === 'Select gender') return 'Please select a gender option';
-        return '';
-
-      default:
-        return '';
-    }
-  };
-
-  const handleChange = e => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    const error = validateField(name, value);
-    setErrors(prev => ({
-      ...prev,
-      [name]: error,
-    }));
-  };
-
-  const handleSubmit = e => {
-    e.preventDefault();
-
-    // Validate all fields
-    const newErrors = {};
-    let hasErrors = false;
-
-    Object.keys(formData).forEach(key => {
-      const error = validateField(key, formData[key]);
-      if (error) {
-        newErrors[key] = error;
-        hasErrors = true;
+        if (response.ok) {
+          const data = await response.json();
+          setFormData(prevData => ({
+            ...prevData,
+            name: data.name || '',
+            username: data.username || '',
+            biography: data.biography || '',
+            gender: data.gender || 'Select gender'
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
       }
-    });
+    };
 
-    if (hasErrors) {
-      setErrors(newErrors);
-      return;
-    }
+    fetchProfileData();
+  }, []);
 
-    console.log('Form submitted:', formData);
-    navigate('/profile');
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const renderFormField = (key, value) => {
-    if (key === 'gender') {
-      return (
-        <select
-          name={key}
-          value={value}
-          onChange={handleChange}
-          className={`w-full rounded-lg border px-4 py-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 ${errors[key] ? 'border-red-500' : 'border-gray-200'}`}
-        >
-          {genderOptions.map(option => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      );
-    }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      const userId = localStorage.getItem('userId');
+      
+      console.log('Submitting profile data:', formData);
+      console.log('User ID:', userId);
 
-    return (
-      <input
-        type='text'
-        name={key}
-        value={value}
-        onChange={handleChange}
-        placeholder={`Enter your ${key}`}
-        className={`w-full rounded-lg border px-4 py-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 ${errors[key] ? 'border-red-500' : 'border-gray-200'}`}
-      />
-    );
+      const response = await fetch(`${API_URL}/users/${userId}/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Server error:', errorData);
+        throw new Error(errorData.message || 'Failed to save profile changes');
+      }
+
+      const data = await response.json();
+      console.log('Save successful:', data);
+
+      navigate('/profile');
+      
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile changes. Please try again.');
+    }
   };
 
   return (
-    <div className='App'>
-      <div className='min-h-screen bg-white px-4 pt-16'>
-        <div className='mx-auto max-w-md'>
-          <h1 className='mb-6 text-xl font-bold'>Edit Profile</h1>
+    <div className="min-h-screen bg-white p-4">
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Edit Profile</h1>
 
-          <form onSubmit={handleSubmit} className='space-y-6'>
-            <div className='mx-auto flex h-32 w-32 cursor-pointer items-center justify-center rounded-lg bg-gray-200 transition-colors hover:bg-gray-300'>
-              <span className='px-2 text-center text-sm text-gray-500'>
-                Change Profile Picture
-              </span>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Name:
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Enter your name"
+            />
+          </div>
+
+          {/* Username field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Username:
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md"
+              placeholder="Enter your username"
+            />
+          </div>
+
+          {/* Biography field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Biography:
+            </label>
+            <textarea
+              name="biography"
+              value={formData.biography}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md"
+              rows="4"
+              maxLength="200"
+              placeholder="Enter your biography"
+            />
+            <div className="text-sm text-gray-500 mt-1">
+              {200 - formData.biography.length} characters remaining
             </div>
+          </div>
 
-            {Object.entries(formData).map(([key, value]) => (
-              <div key={key} className='space-y-1 text-left'>
-                <label className='block text-sm font-medium capitalize text-gray-700'>
-                  {key}:
-                </label>
-                {renderFormField(key, value)}
-                {errors[key] && (
-                  <p className='mt-1 text-sm text-red-500'>{errors[key]}</p>
-                )}
-                {key === 'biography' && (
-                  <p className='mt-1 text-sm text-gray-500'>
-                    {200 - (value?.length || 0)} characters remaining
-                  </p>
-                )}
-              </div>
-            ))}
+          {/* Gender selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Gender:
+            </label>
+            <select
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            >
+              <option value="Select gender">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Non-binary">Non-binary</option>
+              <option value="Other">Other</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+          </div>
 
+          {/* Submit and Return buttons */}
+          <div className="space-y-4">
             <button
-              type='submit'
-              className='w-full rounded-lg bg-emerald-800 py-3 font-medium text-white transition-colors hover:bg-emerald-700'
+              type="submit"
+              className="w-full bg-emerald-800 text-white py-3 rounded-md hover:bg-emerald-700"
             >
               Save Changes
             </button>
-
             <button
-              type='button'
+              type="button"
               onClick={() => navigate('/profile')}
-              className='mt-4 w-full rounded-lg bg-gray-500 py-3 font-medium text-white transition-colors hover:bg-gray-600'
+              className="w-full bg-gray-500 text-white py-3 rounded-md hover:bg-gray-600"
             >
               Return to Profile
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );
-}
+};
 
 export default EditProfile;

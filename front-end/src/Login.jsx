@@ -10,7 +10,7 @@ const Login = () => {
     email: '',
     password: ''
   });
-  const [error, setError] = useState(null); // For error handling
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -19,7 +19,6 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Trim any whitespace from the email and password
     const trimmedEmail = formData.email.trim();
     const trimmedPassword = formData.password.trim();
 
