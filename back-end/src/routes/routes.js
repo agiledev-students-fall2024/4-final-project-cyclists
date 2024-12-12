@@ -1,12 +1,16 @@
 import express from 'express';
 import Route from '../models/Route.js';
+import { verifyToken } from '../controllers/authMiddleware.js';
 
 const router = express.Router();
+
+// Add authentication middleware to protect routes
+router.use(verifyToken);
 
 // Get all routes
 router.get('/', async (req, res) => {
   try {
-    const routes = await Route.find().sort({ date: -1 });
+    const routes = await Route.find({ user: req.user.id }).sort({ date: -1 });
     res.status(200).json(routes);
   } catch (error) {
     console.error('Error getting routes:', error);
@@ -18,8 +22,9 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     console.log('Received route data:', req.body);
-
+    
     const fields = {
+      user: req.user.id,
       name: req.body.name,
       start_location: req.body.start_location,
       end_location: req.body.end_location,

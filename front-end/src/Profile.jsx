@@ -1,58 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, ChevronRight, MapPin, Clock, Route } from 'lucide-react';
+import { ChevronRight, MapPin, Clock, Route } from 'lucide-react';
 import { FaAngleDoubleRight } from 'react-icons/fa';
 import { API_URL } from './config/api';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useState({
-    username: 'unique_username',  // Default value if user is not found
-    routes: [],
+    username: '',
+    name: '',
+    biography: '',
+    gender: '',
+    routes: []
   });
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch the current user's data from localStorage
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser && storedUser.username) {
-      setUserInfo(prevInfo => ({ ...prevInfo, username: storedUser.username }));
-    }
-
-    const fetchRoutes = async () => {
-      setIsLoading(true);
+    const fetchUserData = async () => {
       try {
-        // Retrieve token from local storage
+        setIsLoading(true);
         const token = localStorage.getItem('token');
-    
-        // Make an authorized request
-        const response = await fetch(`${API_URL}/routes`, {
+        const userId = localStorage.getItem('userId');
+        
+        // Fetch profile data
+        const profileResponse = await fetch(`${API_URL}/users/${userId}/profile`, {
           headers: {
-            Authorization: `Bearer ${token}`, // Add the token to the Authorization header
-          },
+            'Authorization': `Bearer ${token}`
+          }
         });
-    
-        if (!response.ok) {
-          throw new Error('Failed to fetch routes');
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          setUserInfo(prev => ({
+            ...prev,
+            ...profileData
+          }));
         }
-    
-        const data = await response.json();
-        // Sort routes by date (newest first) and take only the latest 5
-        const sortedRoutes = data
-          .sort((a, b) => new Date(b.date) - new Date(a.date))
-          .slice(0, 5);
-    
-        setUserInfo((prevInfo) => ({ ...prevInfo, routes: sortedRoutes }));
-        setError(null);
+
+        // Fetch routes
+        const routesResponse = await fetch(`${API_URL}/users/${userId}/saved-routes`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (routesResponse.ok) {
+          const routesData = await routesResponse.json();
+          setUserInfo(prev => ({
+            ...prev,
+            routes: routesData
+          }));
+        }
       } catch (error) {
-        console.error('Error fetching routes:', error);
-        setError('Failed to load routes');
+        console.error('Error fetching user data:', error);
+        setError('Failed to load user data');
       } finally {
         setIsLoading(false);
       }
     };
-    fetchRoutes();
+
+    fetchUserData();
   }, []);
 
   const handleRouteClick = (route) => {
@@ -71,11 +79,18 @@ const Profile = () => {
     <div className='min-h-screen bg-white'>
       <div className='px-4 pt-16 max-w-4xl mx-auto'>
         <div className='mb-8 flex items-start space-x-4'>
-          <div className='flex h-24 w-24 items-center justify-center rounded-lg bg-gray-100'>
-            <User size={32} className='text-gray-400' />
+          <div className='flex h-24 w-24 items-center justify-center rounded-lg bg-gradient-to-br from-orange-300 via-pink-400 to-purple-500'>
+            <img 
+              src="/default-profile.png" 
+              alt="Profile"
+              className='h-16 w-16 object-contain'
+            />
           </div>
           <div className='flex-1'>
-            <h2 className='text-lg font-medium'>{userInfo.username}</h2>  {/* Username displayed here */}
+            <h2 className='text-lg font-medium'>{userInfo.username}</h2>
+            {userInfo.name && <p className='text-gray-600'>{userInfo.name}</p>}
+            {userInfo.biography && <p className='text-gray-600 mt-2'>{userInfo.biography}</p>}
+            {userInfo.gender && userInfo.gender !== 'Select gender' &&
             <div className="mt-2 flex space-x-3">
               <button
                 onClick={() => navigate('/edit-profile')}

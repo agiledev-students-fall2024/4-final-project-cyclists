@@ -10,7 +10,7 @@ const Login = () => {
     email: '',
     password: ''
   });
-  const [error, setError] = useState(null); // For error handling
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -19,7 +19,6 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Trim any whitespace from the email and password
     const trimmedEmail = formData.email.trim();
     const trimmedPassword = formData.password.trim();
 
@@ -31,16 +30,21 @@ const Login = () => {
 
       console.log('Login success:', response.data);
       
-      // Assuming the response contains the user's username
-      if (response.data && response.data.username) {
-        localStorage.setItem('user', JSON.stringify({ username: response.data.username }));
-        console.log('User saved to localStorage:', response.data.username);  // Log the user data
+      // Store both token and user data
+      if (response.data) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('userId', response.data.id); // Store user ID
+        localStorage.setItem('user', JSON.stringify({ 
+          username: response.data.username,
+          id: response.data.id 
+        }));
+        console.log('User data saved to localStorage');
       }
       
-      navigate('/map'); // Redirect on success
+      navigate('/map');
     } catch (error) {
       console.error('Login failed:', error);
-      setError('Invalid email or password'); // Set error message to display in case of failure
+      setError('Invalid email or password');
     }
   };
 

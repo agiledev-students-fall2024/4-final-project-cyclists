@@ -16,7 +16,12 @@ const SavedRoutes = () => {
   const fetchRoutes = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/routes`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/routes`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch routes');
       }
@@ -43,15 +48,18 @@ const SavedRoutes = () => {
 
   const deleteRoute = async (routeId) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`${API_URL}/routes/${routeId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
         throw new Error('Failed to delete route');
       }
 
-      // Update routes list after successful deletion
       setRoutes(routes.filter(route => route._id !== routeId));
     } catch (error) {
       console.error('Error deleting route:', error);

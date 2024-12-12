@@ -1,3 +1,5 @@
+import Route from '../models/Route.js';
+
 const profiles = {};
 
 /**
@@ -31,12 +33,6 @@ export const saveProfile = async (req, res) => {
   const userId = req.params.userId;
   const profileData = req.body;
 
-  if (!profileData.name || !profileData.email) {
-    return res
-      .status(400)
-      .send({ message: 'Missing required fields: name or email' });
-  }
-
   try {
     profiles[userId] = profileData; // Save profile in the mocked database
     res.status(200).send({ message: 'Profile saved successfully' });
@@ -54,8 +50,15 @@ export const saveProfile = async (req, res) => {
  * @param {Object} res - Response object for sending saved routes.
  */
 export const getSavedRoutes = async (req, res) => {
-  // Replace with implementation for fetching saved routes
-  res.status(200).send({ message: 'Saved routes not implemented yet' });
+  try {
+    const userId = req.params.userId;
+    const routes = await Route.find({ user: userId }).sort({ date: -1 });
+    console.log('Found routes:', routes); // Debug log
+    res.status(200).json(routes);
+  } catch (error) {
+    console.error('Error getting saved routes:', error);
+    res.status(500).json({ error: 'Failed to retrieve routes' });
+  }
 };
 
 /**
@@ -65,8 +68,21 @@ export const getSavedRoutes = async (req, res) => {
  * @param {Object} res - Response object for sending confirmation.
  */
 export const addSavedRoute = async (req, res) => {
-  // Replace with implementation for adding a saved route
-  res.status(200).send({ message: 'Add saved route not implemented yet' });
+  try {
+    const userId = req.params.userId;
+    const routeData = req.body;
+    
+    const route = new Route({
+      ...routeData,
+      user: userId
+    });
+    
+    const savedRoute = await route.save();
+    res.status(201).json(savedRoute);
+  } catch (error) {
+    console.error('Error saving route:', error);
+    res.status(500).json({ error: 'Failed to save route' });
+  }
 };
 
 /**
