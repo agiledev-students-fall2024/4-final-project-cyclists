@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions';
@@ -12,8 +12,6 @@ const MAPBOX_ACCESS_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
 mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
 
 function Map() {
-  const location = useLocation();
-  const selectedRoute = location.state?.route;
   const navigate = useNavigate();
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -72,14 +70,20 @@ function Map() {
           place_name: startPoint.name || 'Start',
           geometry: {
             type: 'Point',
-            coordinates: startPoint.maneuver.location,
+            coordinates: [
+              startPoint.maneuver.location[0],
+              startPoint.maneuver.location[1],
+            ],
           },
         },
         destination: {
           place_name: endPoint.name || 'End',
           geometry: {
             type: 'Point',
-            coordinates: endPoint.maneuver.location,
+            coordinates: [
+              endPoint.maneuver.location[0],
+              endPoint.maneuver.location[1],
+            ],
           },
         },
       };
