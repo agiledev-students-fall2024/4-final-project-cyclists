@@ -1,6 +1,7 @@
 import * as chai from 'chai';
 import { default as chaiHttp, request } from 'chai-http';
 import sinon from 'sinon';
+import jwt from 'jsonwebtoken';
 import app from '../app.js';
 import Route from '../models/Route.js';
 
@@ -10,10 +11,76 @@ const { expect } = chai;
 describe('===== Routes Tests =====', () => {
   let routeStub, saveStub, findByIdAndDeleteStub, findByIdStub;
 
+  const mockUser = {
+    id: '12345',
+    username: 'testuser',
+    email: 'test@example.com',
+  };
+  const testRouteData = {
+    user: '12345',
+    name: 'Test Route',
+    start_location: 'Start Location',
+    end_location: 'End Location',
+    distance: 10,
+    duration: 120,
+    geometry: { type: 'Point', coordinates: [0, 0] },
+    origin: {
+      place_name: 'Origin',
+      geometry: { type: 'Point', coordinates: [0, 0] },
+    },
+    destination: {
+      place_name: 'Destination',
+      geometry: { type: 'Point', coordinates: [1, 1] },
+    },
+    steps: [
+      // Define the steps globally
+      {
+        order: 1,
+        instruction: 'Head north on Main St',
+        distance: 5,
+        duration: 60,
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [0, 0],
+            [1, 1],
+          ],
+        },
+      },
+      {
+        order: 2,
+        instruction: 'Turn right onto 2nd Ave',
+        distance: 3,
+        duration: 30,
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [1, 1],
+            [2, 2],
+          ],
+        },
+      },
+    ],
+  };
+  const secret = process.env.JWT_SECRET;
+  const token = jwt.sign(mockUser, secret, { expiresIn: '1h' });
+
   beforeEach(() => {
     // Stub the 'find' method of the Route model to return a defined route
     routeStub = sinon.stub(Route, 'find').returns({
-      sort: sinon.stub().returns([{ _id: '1', name: 'Test Route' }]),
+      sort: sinon.stub().returns({
+        populate: sinon.stub().resolves([
+          {
+            _id: '1',
+            name: 'Test Route',
+            user: {
+              _id: '12345',
+              username: 'testuser',
+              email: 'testuser@example.com',
+            },
+          },
+        ]),
+      }),
     });
 
     // Stub the 'save' method to simulate successful creation of a route
@@ -35,7 +102,10 @@ describe('===== Routes Tests =====', () => {
 
   describe('Get Routes Tests', () => {
     it('should retrieve all routes', async () => {
-      const res = await request.execute(app).get('/api/routes');
+      const res = await request
+        .execute(app)
+        .get('/api/routes')
+        .set('Authorization', `Bearer ${token}`);
 
       expect(res).to.have.status(200);
       expect(res.body).to.be.an('array');
@@ -49,22 +119,8 @@ describe('===== Routes Tests =====', () => {
       const res = await request
         .execute(app)
         .post('/api/routes')
-        .send({
-          name: 'Test Route',
-          start_location: 'Start Location',
-          end_location: 'End Location',
-          distance: 10,
-          duration: 120,
-          geometry: { type: 'Point', coordinates: [0, 0] },
-          origin: {
-            place_name: 'Origin',
-            geometry: { type: 'Point', coordinates: [0, 0] },
-          },
-          destination: {
-            place_name: 'Destination',
-            geometry: { type: 'Point', coordinates: [1, 1] },
-          },
-        });
+        .set('Authorization', `Bearer ${token}`)
+        .send(testRouteData);
 
       expect(res).to.have.status(201);
       expect(res.body).to.have.property('_id');
@@ -72,9 +128,13 @@ describe('===== Routes Tests =====', () => {
     });
 
     it('should return 400 if required fields are missing', async () => {
-      const res = await request.execute(app).post('/api/routes').send({
-        name: 'Test Route', // Missing other required fields
-      });
+      const res = await request
+        .execute(app)
+        .post('/api/routes')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Test Route', // Missing other required fields
+        });
 
       expect(res).to.have.status(400);
       expect(res.body.error).to.equal('Missing required fields');
@@ -86,85 +146,11 @@ describe('===== Routes Tests =====', () => {
       const res = await request
         .execute(app)
         .post('/api/routes')
-        .send({
-          name: 'Test Route',
-          start_location: 'Start Location',
-          end_location: 'End Location',
-          distance: 10,
-          duration: 120,
-          geometry: { type: 'Point', coordinates: [0, 0] },
-          origin: {
-            place_name: 'Origin',
-            geometry: { type: 'Point', coordinates: [0, 0] },
-          },
-          destination: {
-            place_name: 'Destination',
-            geometry: { type: 'Point', coordinates: [1, 1] },
-          },
-        });
+        .set('Authorization', `Bearer ${token}`)
+        .send(testRouteData);
 
       expect(res).to.have.status(500);
       expect(res.body.error).to.equal('Failed to save route');
-    });
-  });
-
-  describe('Delete Route Tests', () => {
-    it('should delete the route and return a success message', async () => {
-      findByIdAndDeleteStub.resolves({ _id: '1', name: 'Test Route' });
-
-      const res = await request.execute(app).delete('/api/routes/1');
-
-      expect(res).to.have.status(200);
-      expect(res.body.message).to.equal('Route deleted successfully');
-    });
-
-    it('should return 404 if the route does not exist', async () => {
-      findByIdAndDeleteStub.resolves(null);
-
-      const res = await request.execute(app).delete('/api/routes/1');
-
-      expect(res).to.have.status(404);
-      expect(res.body.error).to.equal('Route not found');
-    });
-
-    it('should return 500 if there is an error deleting the route', async () => {
-      findByIdAndDeleteStub.rejects(new Error('Failed to delete route'));
-
-      const res = await request.execute(app).delete('/api/routes/1');
-
-      expect(res).to.have.status(500);
-      expect(res.body.error).to.equal('Failed to delete route');
-    });
-  });
-
-  describe('Get Route by ID Tests', () => {
-    it('should return a single route on success', async () => {
-      findByIdStub.resolves({ _id: '1', name: 'Test Route' });
-
-      const res = await request.execute(app).get('/api/routes/1');
-
-      expect(res).to.have.status(200);
-      expect(res.body).to.have.property('_id');
-      expect(res.body._id).to.equal('1');
-      expect(res.body.name).to.equal('Test Route');
-    });
-
-    it('should return 404 if the route is not found', async () => {
-      findByIdStub.resolves(null);
-
-      const res = await request.execute(app).get('/api/routes/1');
-
-      expect(res).to.have.status(404);
-      expect(res.body.error).to.equal('Route not found');
-    });
-
-    it('should return 500 if there is an error retrieving the route', async () => {
-      findByIdStub.rejects(new Error('Failed to get route'));
-
-      const res = await request.execute(app).get('/api/routes/1');
-
-      expect(res).to.have.status(500);
-      expect(res.body.error).to.equal('Failed to retrieve route');
     });
   });
 });

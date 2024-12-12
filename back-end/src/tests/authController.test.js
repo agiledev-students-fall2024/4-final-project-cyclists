@@ -41,7 +41,9 @@ describe('===== Authentication Tests =====', () => {
       });
 
       expect(res).to.have.status(409);
-      expect(res.body.error).to.equal('User already exists');
+      expect(res.body.error).to.equal(
+        'User with this email or username already exists'
+      );
     });
 
     it('should return 201 and a token on successful signup', async () => {
