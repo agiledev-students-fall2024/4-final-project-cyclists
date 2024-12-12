@@ -16,8 +16,8 @@ const Profile = () => {
   useEffect(() => {
     // Fetch the current user's data from localStorage
     const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser && storedUser.name) {
-      setUserInfo(prevInfo => ({ ...prevInfo, username: storedUser.name }));
+    if (storedUser && storedUser.username) {
+      setUserInfo(prevInfo => ({ ...prevInfo, username: storedUser.username }));
     }
 
     const fetchRoutes = async () => {
