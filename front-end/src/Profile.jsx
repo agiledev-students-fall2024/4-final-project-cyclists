@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ChevronRight, MapPin, Clock, Route } from 'lucide-react';
 import { FaAngleDoubleRight } from 'react-icons/fa';
 import { API_URL } from './config/api';
@@ -15,6 +15,7 @@ const Profile = () => {
   });
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [routes, setRoutes] = useState([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -40,22 +41,9 @@ const Profile = () => {
         }
 
         // Fetch routes
-        const routesResponse = await fetch(`${API_URL}/users/${userId}/saved-routes`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (routesResponse.ok) {
-          const routesData = await routesResponse.json();
-          setUserInfo(prev => ({
-            ...prev,
-            routes: routesData
-          }));
-        }
+        await fetchRoutes();
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        setError('Failed to load user data');
+        console.error('Error fetching profile:', error);
       } finally {
         setIsLoading(false);
       }
@@ -63,6 +51,26 @@ const Profile = () => {
 
     fetchUserData();
   }, []);
+
+  const fetchRoutes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/profile-routes`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch routes');
+      }
+
+      const data = await response.json();
+      setRoutes(data);
+    } catch (error) {
+      console.error('Error fetching routes:', error);
+    }
+  };
 
   const handleRouteClick = async (routeId) => {
     try {
@@ -129,14 +137,30 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className='mb-4 flex items-center justify-between'>
-          <h3 className='text-lg font-medium'>Recent Routes</h3>
-          <div
-            className='flex cursor-pointer items-center text-emerald-800 hover:text-emerald-600'
-            onClick={() => navigate('/saved-routes')}
-          >
-            <span className='mr-1'>View All</span>
-            <FaAngleDoubleRight />
+        <div className="mt-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Recent Routes</h2>
+            <Link to="/saved-routes" className="text-emerald-600 hover:text-emerald-700">
+              View All »
+            </Link>
+          </div>
+          <div className="space-y-4">
+            {routes.slice(0, 3).map((route) => (
+              <div
+                key={route._id}
+                className="bg-white shadow rounded-lg p-4 hover:shadow-md transition-shadow"
+              >
+                <h3 className="font-medium">{route.name}</h3>
+                <div className="mt-2 text-sm text-gray-600">
+                  <div>From: {route.start_location}</div>
+                  <div>To: {route.end_location}</div>
+                  <div className="mt-1">
+                    Distance: {(route.distance / 1000).toFixed(2)} km • 
+                    Duration: {Math.round(route.duration / 60)} min
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -145,55 +169,6 @@ const Profile = () => {
             {error}
           </div>
         )}
-
-        <div className='mb-8 space-y-3'>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-800"></div>
-            </div>
-          ) : userInfo.routes.length > 0 ? (
-            userInfo.routes.map((route) => (
-              <div
-                key={route._id} // Changed from `route.id` to `route._id` since MongoDB uses `_id`
-                className='cursor-pointer rounded-lg bg-gray-50 p-4 hover:bg-gray-100 transition-colors border border-gray-100'
-                onClick={() => handleRouteClick(route._id)}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-gray-800">{route.name}</h4>
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <MapPin size={16} className="mr-2 text-emerald-600" />
-                        {route.start_location}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Route size={16} className="mr-2 text-emerald-700" />
-                        {(route.distance / 1000).toFixed(2)} km
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock size={16} className="mr-2 text-emerald-800" />
-                        {Math.round(route.duration / 60)} min
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {formatDate(route.date)}
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No routes saved yet</p>
-              <button
-                onClick={() => navigate('/map')}
-                className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors"
-              >
-                Create Your First Route
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

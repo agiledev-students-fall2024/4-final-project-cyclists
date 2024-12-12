@@ -114,4 +114,21 @@ router.get('/:id', verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * @route GET /routes/profile-routes
+ * @desc Get the 3 most recent routes for the authenticated user
+ * @access Private (requires authentication)
+ */
+router.get('/profile-routes', verifyToken, async (req, res) => {
+  try {
+    const routes = await Route.find({ user: req.user.id })
+      .sort({ date: -1 })
+      .limit(3);
+    res.status(200).json(routes);
+  } catch (error) {
+    console.error('Error getting profile routes:', error);
+    res.status(500).json({ error: 'Failed to retrieve routes' });
+  }
+});
+
 export default router;
