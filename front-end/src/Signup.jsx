@@ -7,10 +7,11 @@ import { API_URL } from './config/api';
 const Signup = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',  // Changed from 'name' to 'username'
+    username: '', 
     email: '',
     password: ''
   });
+  const [error, setError] = useState(''); // State to hold error message
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -18,6 +19,7 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(''); // Reset error before submission
     try {
       const response = await axios.post(`${API_URL}/auth/signup`, formData);
       console.log('Signup success:', response.data);
@@ -42,6 +44,15 @@ const Signup = () => {
 
       navigate('/map'); // Redirect on success
     } catch (error) {
+      if (error.response && error.response.status === 409) { 
+        // Check for 409 Conflict status (username taken)
+        setError('Username is already taken. Please choose a different one.');
+      } else if (error.response && error.response.data && error.response.data.message) {
+        // Handle other server-side validation errors
+        setError(error.response.data.message);
+      } else {
+        setError('An unexpected error occurred. Please try again later.');
+      }
       console.error('Signup failed:', error);
     }
   };
@@ -53,12 +64,16 @@ const Signup = () => {
       </div>
       <div className='rounded bg-white p-6 shadow-md'>
         <h2 className='mb-4 text-2xl'>Sign Up</h2>
+
+        {/* Display error message */}
+        {error && <p className='mb-4 text-sm text-red-500'>{error}</p>}
+
         <form onSubmit={handleSubmit}>
           <div className='mb-4'>
             <label htmlFor='username' className='block text-sm font-medium text-gray-700'>Username</label>
             <input
               type='text'
-              id='username'  // Changed 'name' to 'username'
+              id='username'
               value={formData.username}
               onChange={handleChange}
               className='mt-1 block w-full rounded-md border border-gray-300 p-2'
